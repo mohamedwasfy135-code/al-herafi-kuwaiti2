@@ -1,0 +1,1140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  nameEn    String?  @map("name_en")
+  icon      String?
+  type      String   @default("worker")
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  services   Service[]
+  businesses Business[]
+
+  @@map("categories")
+}
+
+model User {
+  id                   String   @id @default(uuid())
+  role                 String   @default("client")
+  name                 String
+  email                String?  @unique
+  phone                String?
+  password             String?  @default("123456")
+  avatarUrl            String?  @map("avatar_url")
+  fcmToken             String?  @map("fcm_token")
+  bio                  String?
+  workTypes            Json?    @map("work_types")
+  availability         Boolean  @default(true)
+  rating               Float    @default(0)
+  totalJobs            Int      @default(0) @map("total_jobs")
+  totalEarnings        Float    @default(0) @map("total_earnings")
+  bankName             String?  @map("bank_name")
+  bankIban             String?  @map("bank_iban")
+  governorate          String?
+  city                 String?
+  address              String?
+  location             Json?
+  verificationStatus   String   @default("pending") @map("verification_status")
+  civilIdUrl           String?  @map("civil_id_url")
+  licenseUrl           String?  @map("license_url")
+  language             String   @default("ar")
+  notificationsEnabled Boolean  @default(true) @map("notifications_enabled")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  services             Service[]
+  requestsAsClient     Request[]         @relation("ClientRequests")
+  requestsAsCraftsman  Request[]         @relation("CraftsmanRequests")
+  priceOffers          PriceOffer[]
+  reviewsGiven         Review[]          @relation("ClientReviews")
+  reviewsReceived      Review[]          @relation("CraftsmanReviews")
+  earnings             Earning[]
+  payoutRequests       PayoutRequest[]
+  verificationRequests VerificationRequest[]
+  workPhotos           WorkPhoto[]
+  callsAsCaller        Call[]            @relation("CallerCalls")
+  callsAsCallee        Call[]            @relation("CalleeCalls")
+  chatsAsParticipant1  Chat[]            @relation("ChatParticipant1")
+  chatsAsParticipant2  Chat[]            @relation("ChatParticipant2")
+  notifications        Notification[]
+  cartItems            CartItem[]
+  businessClientRefs   BusinessClient[]
+  messages             Message[]
+  ownedBusinesses      Business[]        @relation("BusinessOwner")
+  auditLogs            AuditLog[]
+
+  @@map("users")
+}
+
+model Service {
+  id           Int      @id @default(autoincrement())
+  craftsmanId  String   @map("craftsman_id")
+  categoryId   Int?     @map("category_id")
+  title        String
+  description  String?
+  price        Float    @default(0)
+  images       String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  craftsman User     @relation(fields: [craftsmanId], references: [id])
+  category  Category? @relation(fields: [categoryId], references: [id])
+
+  @@map("services")
+}
+
+model Business {
+  id                 String    @id @default(uuid())
+  ownerId            String    @map("owner_id")
+  name               String
+  nameEn             String?   @map("name_en")
+  description        String?
+  logoUrl            String?   @map("logo_url")
+  coverUrl           String?   @map("cover_url")
+  phone              String?
+  email              String?
+  website            String?
+  category           String?
+  businessType       String    @default("shop") @map("business_type")
+  categoryId         Int?      @map("category_id")
+  governorate        String?
+  city               String?
+  address            String?
+  location           Json?
+  invoiceFooterText  String?   @map("invoice_footer_text")
+  verificationStatus String    @default("pending") @map("verification_status")
+  licenseUrl         String?   @map("license_url")
+  civilIdUrl         String?   @map("civil_id_url")
+  subscriptionStatus String    @default("free") @map("subscription_status")
+  subscriptionStart  DateTime? @map("subscription_start")
+  subscriptionEnd    DateTime? @map("subscription_end")
+  commissionRate     Float     @default(0) @map("commission_rate")
+  rating             Float     @default(0)
+  totalReviews       Int       @default(0) @map("total_reviews")
+  isActive           Boolean   @default(true) @map("is_active")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  owner             User              @relation("BusinessOwner", fields: [ownerId], references: [id])
+  categoryRef       Category?         @relation(fields: [categoryId], references: [id])
+  products          Product[]
+  productCategories ProductCategory[]
+  warehouses        Warehouse[]
+  suppliers         Supplier[]
+  employees         Employee[]
+  salaries          Salary[]
+  rents             Rent[]
+  productMovements  ProductMovement[]
+  requests          Request[]
+  priceOffers       PriceOffer[]
+  reviews           Review[]
+  accounts          Account[]
+  transactions      BusinessTransaction[]
+  salesInvoices     SalesInvoice[]
+  purchaseInvoices  PurchaseInvoice[]
+  salesReturns      SalesReturn[]
+  purchaseReturns   PurchaseReturn[]
+  bonds             Bond[]
+  expenses          Expense[]
+  businessSummaries BusinessSummary[]
+  subscriptions     Subscription[]
+  businessClients   BusinessClient[]
+  offers            Offer[]
+  cartItems         CartItem[]
+  businessUsers     BusinessUser[]
+  shareholders      Shareholder[]
+  shareholderTransactions ShareholderTransaction[]
+  priceQuotes          PriceQuote[]
+  auditLogs             AuditLog[]
+  notificationLogs      NotificationLog[]
+
+  @@map("businesses")
+}
+
+model ProductCategory {
+  id          Int      @id @default(autoincrement())
+  businessId  String   @map("business_id")
+  name        String
+  nameEn      String?  @map("name_en")
+  parentId    Int?     @map("parent_id")
+  icon        String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  business Business           @relation(fields: [businessId], references: [id])
+  parent   ProductCategory?   @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children ProductCategory[]  @relation("CategoryHierarchy")
+  products Product[]
+
+  @@map("product_categories")
+}
+
+model Warehouse {
+  id          Int      @id @default(autoincrement())
+  businessId  String   @map("business_id")
+  name        String
+  nameEn      String?  @map("name_en")
+  code        String?
+  address     String?
+  managerName String?  @map("manager_name")
+  managerPhone String? @map("manager_phone")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  business  Business           @relation(fields: [businessId], references: [id])
+  products  WarehouseProduct[]
+  movements ProductMovement[]
+
+  @@map("warehouses")
+}
+
+model WarehouseProduct {
+  id            Int      @id @default(autoincrement())
+  warehouseId   Int      @map("warehouse_id")
+  productId     Int      @map("product_id")
+  quantity      Int      @default(0)
+  minQuantity   Int      @default(0) @map("min_quantity")
+  location      String?  // موقع داخل المستودع
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@unique([warehouseId, productId])
+  @@map("warehouse_products")
+}
+
+model Supplier {
+  id              Int      @id @default(autoincrement())
+  businessId      String   @map("business_id")
+  name            String
+  nameEn          String?  @map("name_en")
+  phone           String?
+  email           String?
+  address         String?
+  contactPerson   String?  @map("contact_person")
+  contactPhone    String?  @map("contact_phone")
+  balance         Float    @default(0) // رصيد المورد (ما علينا)
+  paymentTerms    String?  @map("payment_terms")
+  taxNumber       String?  @map("tax_number")
+  notes           String?
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  business          Business           @relation(fields: [businessId], references: [id])
+  purchaseInvoices  PurchaseInvoice[]
+  products          Product[]
+
+  @@map("suppliers")
+}
+
+model Employee {
+  id              Int      @id @default(autoincrement())
+  businessId      String   @map("business_id")
+  name            String
+  nameEn          String?  @map("name_en")
+  phone           String?
+  email           String?
+  nationalId      String?  @map("national_id")
+  position        String?  // المنصب/الوظيفة
+  department      String?  // القسم
+  salary          Float    @default(0)
+  joinDate        DateTime? @map("join_date")
+  leaveDate       DateTime? @map("leave_date")
+  bankName        String?  @map("bank_name")
+  bankIban        String?  @map("bank_iban")
+  address         String?
+  notes           String?
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  business  Business  @relation(fields: [businessId], references: [id])
+  salaries  Salary[]
+
+  @@map("employees")
+}
+
+model Salary {
+  id          Int       @id @default(autoincrement())
+  businessId  String    @map("business_id")
+  employeeId  Int       @map("employee_id")
+  month       Int       // الشهر 1-12
+  year        Int       // السنة
+  basicSalary Float     @default(0) @map("basic_salary")
+  allowances  Float     @default(0) // البدلات
+  deductions  Float     @default(0) // الخصومات
+  netSalary   Float     @default(0) @map("net_salary")
+  status      String    @default("pending") // pending, paid
+  paidDate    DateTime? @map("paid_date")
+  notes         String?
+  paymentMethod String?   @map("payment_method") // cash, bank, knet
+  accountId     Int?      @map("account_id") // الحساب الذي صرف منه الراتب
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
+  account  Account? @relation(fields: [accountId], references: [id])
+
+  @@map("salaries")
+}
+
+model Rent {
+  id           Int       @id @default(autoincrement())
+  businessId   String    @map("business_id")
+  propertyOwner String?  @map("property_owner") // صاحب العقار
+  propertyDesc String?   @map("property_desc") // وصف العقار
+  amount       Float     @default(0)
+  dueDay       Int       @default(1) // يوم الاستحقاق في الشهر
+  startDate    DateTime? @map("start_date")
+  endDate      DateTime? @map("end_date")
+  accountId    Int?      @map("account_id") // الحساب الذي يصرف منه الإيجار
+  notes         String?
+  paymentMethod String?    @map("payment_method") // cash, bank, knet
+  paymentDate   DateTime?  @map("payment_date")
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+  account  Account? @relation(fields: [accountId], references: [id])
+
+  @@map("rents")
+}
+
+model Product {
+  id                Int      @id @default(autoincrement())
+  businessId        String   @map("business_id")
+  name              String
+  nameEn            String?  @map("name_en")
+  description       String?
+  sku               String?
+  barcode           String?
+  price             Float    @default(0)
+  costPrice         Float    @default(0) @map("cost_price")
+  discountPrice     Float?   @map("discount_price")
+  stockQuantity     Int      @default(0) @map("stock_quantity")
+  lowStockThreshold Int      @default(5) @map("low_stock_threshold")
+  trackStock        Boolean  @default(true) @map("track_stock")
+  category          String?
+  categoryId        Int?     @map("category_id")
+  supplierId        Int?     @map("supplier_id")
+  unit              String?
+  images            String?
+  isActive          Boolean  @default(true) @map("is_active")
+  isFeatured        Boolean  @default(false) @map("is_featured")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  business             Business            @relation(fields: [businessId], references: [id])
+  productCategory      ProductCategory?    @relation(fields: [categoryId], references: [id])
+  supplier             Supplier?           @relation(fields: [supplierId], references: [id])
+  movements            ProductMovement[]
+  warehouseProducts    WarehouseProduct[]
+  salesInvoiceItems    SalesInvoiceItem[]
+  purchaseInvoiceItems PurchaseInvoiceItem[]
+  priceQuoteItems      PriceQuoteItem[]
+  cartItems            CartItem[]
+  offers               Offer[]
+
+  @@map("products")
+}
+
+model ProductMovement {
+  id            Int      @id @default(autoincrement())
+  productId     Int      @map("product_id")
+  businessId    String   @map("business_id")
+  warehouseId   Int?     @map("warehouse_id")
+  movementType  String   @map("movement_type")
+  quantity      Int
+  referenceType String?  @map("reference_type")
+  referenceId   Int?     @map("reference_id")
+  notes         String?
+  createdBy     String?  @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  product   Product    @relation(fields: [productId], references: [id])
+  business  Business   @relation(fields: [businessId], references: [id])
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id])
+
+  @@map("product_movements")
+}
+
+model Request {
+  id                 Int      @id @default(autoincrement())
+  clientId           String   @map("client_id")
+  craftsmanId        String?  @map("craftsman_id")
+  businessId         String?  @map("business_id")
+  serviceType        String   @map("service_type")
+  description        String?
+  images             String?
+  governorate        String?
+  city               String?
+  address            String?
+  location           Json?
+  estimatedPrice     Float?   @map("estimated_price")
+  agreedPrice        Float?   @map("agreed_price")
+  finalPrice         Float?   @map("final_price")
+  status             String   @default("pending")
+  assignedAt         DateTime? @map("assigned_at")
+  autoAssigned       Boolean  @default(false) @map("auto_assigned")
+  score              Float?
+  clientRating       Int?     @map("client_rating")
+  clientReview       String?  @map("client_review")
+  aiUrgency          String?  @map("ai_urgency")
+  aiSuggestedService String?  @map("ai_suggested_service")
+  aiNotes            Json?    @map("ai_notes")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  client      User          @relation("ClientRequests", fields: [clientId], references: [id])
+  craftsman   User?         @relation("CraftsmanRequests", fields: [craftsmanId], references: [id])
+  business    Business?     @relation(fields: [businessId], references: [id])
+  priceOffers PriceOffer[]
+  reviews     Review[]
+  payments    Payment[]
+  earnings    Earning[]
+  workPhotos  WorkPhoto[]
+  calls       Call[]
+  chat        Chat?
+
+  @@map("requests")
+}
+
+model GuestRequest {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  phone              String
+  governorate        String?
+  city               String?
+  address            String?
+  location           Json?
+  serviceType        String?  @map("service_type")
+  description        String?
+  images             String?
+  status             String   @default("pending")
+  craftsmanId        String?  @map("craftsman_id")
+  convertedUserId    String?  @map("converted_user_id")
+  convertedRequestId Int?     @map("converted_request_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@map("guest_requests")
+}
+
+model PriceOffer {
+  id               Int      @id @default(autoincrement())
+  requestId        Int      @map("request_id")
+  craftsmanId      String?  @map("craftsman_id")
+  businessId       String?  @map("business_id")
+  proposedPrice    Float    @map("proposed_price")
+  description      String?
+  estimatedDuration String? @map("estimated_duration")
+  status           String   @default("pending")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  request   Request   @relation(fields: [requestId], references: [id])
+  craftsman User?     @relation(fields: [craftsmanId], references: [id])
+  business  Business? @relation(fields: [businessId], references: [id])
+
+  @@map("price_offers")
+}
+
+model Offer {
+  id                 Int      @id @default(autoincrement())
+  businessId         String   @map("business_id")
+  title              String
+  description        String?
+  discountPercentage Float?   @map("discount_percentage")
+  originalPrice      Float?   @map("original_price")
+  offerPrice         Float?   @map("offer_price")
+  imageUrl           String?  @map("image_url")
+  productId          Int?     @map("product_id")
+  isActive           Boolean  @default(true) @map("is_active")
+  startDate          DateTime? @map("start_date")
+  endDate            DateTime? @map("end_date")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+  product  Product? @relation(fields: [productId], references: [id])
+
+  @@map("offers")
+}
+
+model Review {
+  id          Int      @id @default(autoincrement())
+  requestId   Int      @map("request_id")
+  craftsmanId String?  @map("craftsman_id")
+  clientId    String?  @map("client_id")
+  businessId  String?  @map("business_id")
+  rating      Int
+  comment     String?
+  images      String?
+  aiSentiment String?  @map("ai_sentiment")
+  aiSummary   String?  @map("ai_summary")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  request    Request   @relation(fields: [requestId], references: [id])
+  craftsman  User?     @relation("CraftsmanReviews", fields: [craftsmanId], references: [id])
+  client     User?     @relation("ClientReviews", fields: [clientId], references: [id])
+  business   Business? @relation(fields: [businessId], references: [id])
+
+  @@map("reviews")
+}
+
+model Payment {
+  id                       Int      @id @default(autoincrement())
+  requestId                Int      @map("request_id")
+  amount                   Float
+  commission               Float    @default(0)
+  netAmount                Float    @default(0) @map("net_amount")
+  paymentMethod            String?  @map("payment_method")
+  status                   String   @default("pending")
+  myfatoorahInvoiceId      String?  @map("myfatoorah_invoice_id")
+  myfatoorahTransactionRef String?  @map("myfatoorah_transaction_ref")
+  myfatoorahGateway        String?  @map("myfatoorah_gateway")
+  paidAt                   DateTime? @map("paid_at")
+  notes                    String?
+  createdAt                DateTime @default(now()) @map("created_at")
+
+  request Request @relation(fields: [requestId], references: [id])
+
+  @@map("payments")
+}
+
+model Chat {
+  id             String    @id @default(uuid())
+  participant1   String    @map("participant_1")
+  participant2   String    @map("participant_2")
+  requestId      Int?      @unique @map("request_id")
+  lastMessage    String?   @map("last_message")
+  lastMessageAt  DateTime? @map("last_message_at")
+  unreadCount1   Int       @default(0) @map("unread_count_1")
+  unreadCount2   Int       @default(0) @map("unread_count_2")
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  user1    User      @relation("ChatParticipant1", fields: [participant1], references: [id])
+  user2    User      @relation("ChatParticipant2", fields: [participant2], references: [id])
+  request  Request?  @relation(fields: [requestId], references: [id])
+  messages Message[]
+
+  @@map("chats")
+}
+
+model Message {
+  id             Int      @id @default(autoincrement())
+  chatId         String   @map("chat_id")
+  senderId       String   @map("sender_id")
+  content        String?
+  messageType    String   @default("text") @map("message_type")
+  attachmentUrl  String?  @map("attachment_url")
+  attachmentName String?  @map("attachment_name")
+  attachmentSize Int?     @map("attachment_size")
+  isRead         Boolean  @default(false) @map("is_read")
+  readAt         DateTime? @map("read_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  chat   Chat @relation(fields: [chatId], references: [id])
+  sender User @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model Notification {
+  id            Int      @id @default(autoincrement())
+  userId        String   @map("user_id")
+  title         String
+  body          String?
+  type          String?
+  referenceType String?  @map("reference_type")
+  referenceId   Int?     @map("reference_id")
+  isRead        Boolean  @default(false) @map("is_read")
+  readAt        DateTime? @map("read_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model Earning {
+  id          Int      @id @default(autoincrement())
+  craftsmanId String   @map("craftsman_id")
+  requestId   Int      @map("request_id")
+  amount      Float
+  commission  Float    @default(0)
+  netEarning  Float    @default(0) @map("net_earning")
+  status      String   @default("pending")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  craftsman User    @relation(fields: [craftsmanId], references: [id])
+  request   Request @relation(fields: [requestId], references: [id])
+
+  @@map("earnings")
+}
+
+model PayoutRequest {
+  id          Int       @id @default(autoincrement())
+  craftsmanId String    @map("craftsman_id")
+  amount      Float
+  bankName    String?   @map("bank_name")
+  bankIban    String?   @map("bank_iban")
+  status      String    @default("pending")
+  reviewedBy  String?   @map("reviewed_by")
+  reviewedAt  DateTime? @map("reviewed_at")
+  notes       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  craftsman User @relation(fields: [craftsmanId], references: [id])
+
+  @@map("payout_requests")
+}
+
+model VerificationRequest {
+  id              Int       @id @default(autoincrement())
+  userId          String    @map("user_id")
+  civilIdUrl      String?   @map("civil_id_url")
+  licenseUrl      String?   @map("license_url")
+  profileImageUrl String?   @map("profile_image_url")
+  additionalDocs  String?   @map("additional_docs")
+  status          String    @default("pending")
+  reviewedBy      String?   @map("reviewed_by")
+  reviewedAt      DateTime? @map("reviewed_at")
+  rejectionReason String?   @map("rejection_reason")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("verification_requests")
+}
+
+model WorkPhoto {
+  id          Int      @id @default(autoincrement())
+  craftsmanId String   @map("craftsman_id")
+  requestId   Int      @map("request_id")
+  imageUrl    String   @map("image_url")
+  caption     String?
+  isBefore    Boolean  @default(false) @map("is_before")
+  isAfter     Boolean  @default(false) @map("is_after")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  craftsman User    @relation(fields: [craftsmanId], references: [id])
+  request   Request @relation(fields: [requestId], references: [id])
+
+  @@map("work_photos")
+}
+
+model Call {
+  id              String    @id @default(uuid())
+  callerId        String    @map("caller_id")
+  calleeId        String    @map("callee_id")
+  requestId       Int?      @map("request_id")
+  status          String    @default("ringing")
+  offer           Json?
+  answer          Json?
+  iceCandidates   String?   @map("ice_candidates")
+  startedAt       DateTime? @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+  durationSeconds Int?      @map("duration_seconds")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  caller   User     @relation("CallerCalls", fields: [callerId], references: [id])
+  callee   User     @relation("CalleeCalls", fields: [calleeId], references: [id])
+  request  Request? @relation(fields: [requestId], references: [id])
+
+  @@map("calls")
+}
+
+model Account {
+  id             Int      @id @default(autoincrement())
+  businessId     String   @map("business_id")
+  code           String
+  name           String
+  nameEn         String?  @map("name_en")
+  accountType    String   @map("account_type")
+  parentId       Int?     @map("parent_id")
+  currentBalance Float    @default(0) @map("current_balance")
+  openingBalance Float    @default(0) @map("opening_balance")
+  isActive       Boolean  @default(true) @map("is_active")
+  description    String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  business           Business             @relation(fields: [businessId], references: [id])
+  parent             Account?             @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children           Account[]            @relation("AccountHierarchy")
+  debitTransactions  BusinessTransaction[] @relation("DebitAccount")
+  creditTransactions BusinessTransaction[] @relation("CreditAccount")
+  bonds              Bond[]
+  salaries           Salary[]
+  rents              Rent[]
+  salesInvoices      SalesInvoice[]
+  purchaseInvoices   PurchaseInvoice[]
+  shareholderTransactions ShareholderTransaction[]
+
+  @@map("accounts")
+}
+
+model BusinessTransaction {
+  id              Int       @id @default(autoincrement())
+  businessId      String    @map("business_id")
+  type            String
+  amount          Float
+  description     String?
+  category        String?
+  referenceType   String?   @map("reference_type")
+  referenceId     Int?      @map("reference_id")
+  debitAccountId  Int?      @map("debit_account_id")
+  creditAccountId Int?      @map("credit_account_id")
+  attachmentUrls  String?   @map("attachment_urls")
+  isRecurring     Boolean   @default(false) @map("is_recurring")
+  recurringPeriod String?   @map("recurring_period")
+  tags            String?
+  createdBy       String?   @map("created_by")
+  transactionDate DateTime? @map("transaction_date")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  business      Business @relation(fields: [businessId], references: [id])
+  debitAccount  Account? @relation("DebitAccount", fields: [debitAccountId], references: [id])
+  creditAccount Account? @relation("CreditAccount", fields: [creditAccountId], references: [id])
+
+  @@map("business_transactions")
+}
+
+model SalesInvoice {
+  id             Int       @id @default(autoincrement())
+  businessId     String    @map("business_id")
+  invoiceNumber  String    @map("invoice_number")
+  clientId       Int?      @map("client_id")
+  clientName     String?   @map("client_name")
+  clientPhone    String?   @map("client_phone")
+  subtotal       Float     @default(0)
+  discountAmount Float     @default(0) @map("discount_amount")
+  taxAmount      Float     @default(0) @map("tax_amount")
+  total          Float     @default(0)
+  status         String    @default("draft")
+  paidAmount     Float     @default(0) @map("paid_amount")
+  paymentMethod  String?   @map("payment_method")
+  paymentDate    DateTime? @map("payment_date")
+  accountId      Int?      @map("account_id")
+  dueDate        DateTime? @map("due_date")
+  notes          String?
+  issuedAt       DateTime? @map("issued_at")
+  createdBy      String?   @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  business     Business           @relation(fields: [businessId], references: [id])
+  items        SalesInvoiceItem[]
+  salesReturns SalesReturn[]
+  account      Account?           @relation(fields: [accountId], references: [id])
+  priceQuotes  PriceQuote[]
+
+  @@map("sales_invoices")
+}
+
+model SalesInvoiceItem {
+  id             Int      @id @default(autoincrement())
+  invoiceId      Int      @map("invoice_id")
+  productId      Int?     @map("product_id")
+  description    String?
+  quantity       Float    @default(1)
+  unitPrice      Float    @default(0) @map("unit_price")
+  discountAmount Float    @default(0) @map("discount_amount")
+  total          Float    @default(0)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  invoice SalesInvoice @relation(fields: [invoiceId], references: [id])
+  product Product?     @relation(fields: [productId], references: [id])
+
+  @@map("sales_invoice_items")
+}
+
+model PurchaseInvoice {
+  id            Int       @id @default(autoincrement())
+  businessId    String    @map("business_id")
+  invoiceNumber String    @map("invoice_number")
+  supplierId    Int?      @map("supplier_id")
+  supplierName  String?   @map("supplier_name")
+  supplierPhone String?   @map("supplier_phone")
+  subtotal      Float     @default(0)
+  taxAmount     Float     @default(0) @map("tax_amount")
+  total         Float     @default(0)
+  status        String    @default("draft")
+  paidAmount    Float     @default(0) @map("paid_amount")
+  paymentMethod String?   @map("payment_method")
+  paymentDate   DateTime? @map("payment_date")
+  accountId     Int?      @map("account_id")
+  dueDate       DateTime? @map("due_date")
+  notes         String?
+  issuedAt      DateTime? @map("issued_at")
+  createdBy     String?   @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  business        Business             @relation(fields: [businessId], references: [id])
+  supplier        Supplier?            @relation(fields: [supplierId], references: [id])
+  items           PurchaseInvoiceItem[]
+  purchaseReturns PurchaseReturn[]
+  account         Account?             @relation(fields: [accountId], references: [id])
+
+  @@map("purchase_invoices")
+}
+
+model PurchaseInvoiceItem {
+  id          Int      @id @default(autoincrement())
+  invoiceId   Int      @map("invoice_id")
+  productId   Int?     @map("product_id")
+  description String?
+  quantity    Float    @default(1)
+  unitPrice   Float    @default(0) @map("unit_price")
+  total       Float    @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  invoice PurchaseInvoice @relation(fields: [invoiceId], references: [id])
+  product Product?        @relation(fields: [productId], references: [id])
+
+  @@map("purchase_invoice_items")
+}
+
+model SalesReturn {
+  id                Int      @id @default(autoincrement())
+  businessId        String   @map("business_id")
+  originalInvoiceId Int      @map("original_invoice_id")
+  returnNumber      String   @map("return_number")
+  clientName        String?  @map("client_name")
+  total             Float    @default(0)
+  reason            String?
+  status            String   @default("pending")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  business         Business     @relation(fields: [businessId], references: [id])
+  originalInvoice  SalesInvoice @relation(fields: [originalInvoiceId], references: [id])
+
+  @@map("sales_returns")
+}
+
+model PurchaseReturn {
+  id                Int      @id @default(autoincrement())
+  businessId        String   @map("business_id")
+  originalInvoiceId Int      @map("original_invoice_id")
+  returnNumber      String   @map("return_number")
+  supplierName      String?  @map("supplier_name")
+  total             Float    @default(0)
+  reason            String?
+  status            String   @default("pending")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  business          Business        @relation(fields: [businessId], references: [id])
+  originalInvoice   PurchaseInvoice @relation(fields: [originalInvoiceId], references: [id])
+
+  @@map("purchase_returns")
+}
+
+model Bond {
+  id            Int       @id @default(autoincrement())
+  businessId    String    @map("business_id")
+  bondNumber    String    @map("bond_number")
+  bondType      String    @map("bond_type")
+  amount        Float
+  accountId     Int?      @map("account_id")
+  partyName     String?   @map("party_name")
+  partyType     String?   @map("party_type")
+  description   String?
+  referenceType String?   @map("reference_type")
+  referenceId   Int?      @map("reference_id")
+  paymentMethod String?   @map("payment_method")
+  issuedDate    DateTime? @map("issued_date")
+  createdBy     String?   @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+  account  Account? @relation(fields: [accountId], references: [id])
+
+  @@map("bonds")
+}
+
+model Expense {
+  id             Int       @id @default(autoincrement())
+  businessId     String    @map("business_id")
+  category       String?
+  description    String?
+  amount         Float
+  expenseDate    DateTime? @map("expense_date")
+  receiptUrl     String?   @map("receipt_url")
+  attachmentUrls String?   @map("attachment_urls")
+  isRecurring    Boolean   @default(false) @map("is_recurring")
+  recurringPeriod String?  @map("recurring_period")
+  createdBy      String?   @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@map("expenses")
+}
+
+model BusinessSummary {
+  id               Int      @id @default(autoincrement())
+  businessId       String   @map("business_id")
+  totalIncome      Float    @default(0) @map("total_income")
+  totalExpenses    Float    @default(0) @map("total_expenses")
+  totalPurchases   Float    @default(0) @map("total_purchases")
+  totalCommission  Float    @default(0) @map("total_commission")
+  netProfit        Float    @default(0) @map("net_profit")
+  transactionCount Int      @default(0) @map("transaction_count")
+  monthlyData      Json?    @map("monthly_data")
+  lastUpdated      DateTime @default(now()) @map("last_updated")
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@map("business_summaries")
+}
+
+model Subscription {
+  id           Int       @id @default(autoincrement())
+  businessId   String    @map("business_id")
+  plan         String    @default("free")
+  price        Float     @default(0)
+  durationDays Int?      @map("duration_days")
+  startDate    DateTime? @map("start_date")
+  endDate      DateTime? @map("end_date")
+  status       String    @default("active")
+  autoRenew    Boolean   @default(false) @map("auto_renew")
+  paymentId    Int?      @map("payment_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@map("subscriptions")
+}
+
+model BusinessClient {
+  id             Int      @id @default(autoincrement())
+  businessId     String   @map("business_id")
+  userId         String?  @map("user_id")
+  name           String
+  phone          String?
+  email          String?
+  address        String?
+  totalPurchases Float    @default(0) @map("total_purchases")
+  totalPaid      Float    @default(0) @map("total_paid")
+  balance        Float    @default(0)
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+  user     User?    @relation(fields: [userId], references: [id])
+
+  @@map("business_clients")
+}
+
+model AdminReport {
+  id                Int      @id @default(autoincrement())
+  reportDate        DateTime @map("report_date")
+  reportType        String   @map("report_type")
+  totalRequests     Int      @default(0) @map("total_requests")
+  completedRequests Int      @default(0) @map("completed_requests")
+  cancelledRequests Int      @default(0) @map("cancelled_requests")
+  avgRating         Float    @default(0) @map("avg_rating")
+  totalRevenue      Float    @default(0) @map("total_revenue")
+  newUsers          Int      @default(0) @map("new_users")
+  newCraftsmen      Int      @default(0) @map("new_craftsmen")
+  aiSummary         String?  @map("ai_summary")
+  aiInsights        Json?    @map("ai_insights")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@map("admin_reports")
+}
+
+model AppConfig {
+  key         String   @id
+  value       Json?
+  description String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("app_config")
+}
+
+model CartItem {
+  id         Int      @id @default(autoincrement())
+  userId     String   @map("user_id")
+  productId  Int      @map("product_id")
+  businessId String   @map("business_id")
+  quantity   Int      @default(1)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@map("cart_items")
+}
+
+model BusinessUser {
+  id          String   @id @default(uuid())
+  businessId  String   @map("business_id")
+  userId      String?  @map("user_id")
+  name        String
+  phone       String?
+  email       String?
+  password    String   @default("123456")
+  role        String   @default("seller") // owner, accountant, seller
+  permissions Json?    // صلاحيات محددة
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@map("business_users")
+}
+
+// ─── Shares & Partnership System ─────────────────────────────────
+
+model Shareholder {
+  id            Int      @id @default(autoincrement())
+  businessId    String   @map("business_id")
+  name          String
+  phone         String?
+  email         String?
+  shareType     String   @default("share") @map("share_type") // share (حصة) أو partnership (شراكة)
+  shareCount    Int      @default(1) @map("share_count") // عدد الحصص
+  shareValue    Float    @default(0) @map("share_value") // قيمة الحصة الواحدة
+  totalValue    Float    @default(0) @map("total_value") // إجمالي قيمة الحصص
+  percentage    Float    @default(0) // النسبة المئوية من رأس المال
+  joinDate      DateTime? @map("join_date")
+  exitDate      DateTime? @map("exit_date")
+  isActive      Boolean  @default(true) @map("is_active")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  business     Business          @relation(fields: [businessId], references: [id])
+  transactions ShareholderTransaction[]
+
+  @@map("shareholders")
+}
+
+model ShareholderTransaction {
+  id              Int      @id @default(autoincrement())
+  businessId      String   @map("business_id")
+  shareholderId   Int      @map("shareholder_id")
+  transactionType String   @map("transaction_type") // contribution (مساهمة), withdrawal (سحب), profit_distribution (توزيع أرباح), capital_increase (زيادة رأس المال), capital_decrease (تخفيض رأس المال)
+  amount          Float
+  shareCount      Int      @default(0) @map("share_count") // عدد الحصص المتأثرة
+  description     String?
+  transactionDate DateTime @map("transaction_date")
+  accountId       Int?     @map("account_id") // الحساب المحاسبي المرتبط
+  referenceType   String?  @map("reference_type")
+  referenceId     Int?     @map("reference_id")
+  createdBy       String?  @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  business    Business    @relation(fields: [businessId], references: [id])
+  shareholder Shareholder @relation(fields: [shareholderId], references: [id])
+  account     Account?    @relation(fields: [accountId], references: [id])
+
+  @@map("shareholder_transactions")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  businessId  String   @map("business_id")
+  userId      String?  @map("user_id")
+  action      String   // CREATE, UPDATE, DELETE, PAY, MERGE, EXPORT, IMPORT
+  entity      String   // Product, Invoice, Bond, etc.
+  entityId    Int?     @map("entity_id")
+  changes     Json?    // { before: {}, after: {} }
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+  user     User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model NotificationLog {
+  id          Int       @id @default(autoincrement())
+  businessId  String    @map("business_id")
+  type        String    // daily_report, weekly_report, monthly_report, ai_analysis, alert
+  channel     String    @default("whatsapp") // whatsapp, email, in_app
+  recipient   String    // phone number or email
+  title       String
+  message     String?
+  status      String    @default("pending") // pending, sent, failed
+  sentAt      DateTime? @map("sent_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@map("notification_logs")
+}
+
+// ─── Price Quotes System ──────────────────────────────────────
+
+model PriceQuote {
+  id                  Int       @id @default(autoincrement())
+  businessId          String    @map("business_id")
+  quoteNumber         String    @map("quote_number")
+  clientId            Int?      @map("client_id")
+  clientName          String?   @map("client_name")
+  clientPhone         String?   @map("client_phone")
+  subtotal            Float     @default(0)
+  discountAmount      Float     @default(0) @map("discount_amount")
+  taxAmount           Float     @default(0) @map("tax_amount")
+  total               Float     @default(0)
+  status              String    @default("draft") // draft, sent, accepted, declined, converted
+  validUntil          DateTime? @map("valid_until")
+  notes               String?
+  convertedToInvoiceId Int?     @map("converted_to_invoice_id")
+  issuedAt            DateTime? @map("issued_at")
+  createdBy           String?   @map("created_by")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  business Business           @relation(fields: [businessId], references: [id])
+  items    PriceQuoteItem[]
+  convertedToInvoice SalesInvoice? @relation(fields: [convertedToInvoiceId], references: [id])
+
+  @@map("price_quotes")
+}
+
+model PriceQuoteItem {
+  id             Int      @id @default(autoincrement())
+  quoteId        Int      @map("quote_id")
+  productId      Int?     @map("product_id")
+  description    String?
+  quantity       Float    @default(1)
+  unitPrice      Float    @default(0) @map("unit_price")
+  discountAmount Float    @default(0) @map("discount_amount")
+  total          Float    @default(0)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  quote   PriceQuote @relation(fields: [quoteId], references: [id])
+  product Product?   @relation(fields: [productId], references: [id])
+
+  @@map("price_quote_items")
+}
