@@ -14,12 +14,10 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 [Check Status] فحص حالة الدفع:', { requestId, paymentId });
 
-    // التحقق من حالة الفاتورة من ماي فاتورة
-    const invoiceStatus = await getInvoiceStatus(paymentId);
+    const invoiceStatus = await getInvoiceStatus(paymentId, 'InvoiceId');
     console.log('📊 حالة الفاتورة من ماي فاتورة:', invoiceStatus);
 
     if (invoiceStatus.InvoiceStatus === 'Paid') {
-      // تحديث حالة الطلب
       const req = await db.request.findUnique({
         where: { id: parseInt(requestId) },
         include: { client: true }
@@ -29,21 +27,25 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'الطلب غير موجود' }, { status: 404 });
       }
 
-      // البحث عن معاملة الدفع
       const transaction = await db.paymentTransaction.findFirst({
-        where: { paymentId, requestId: parseInt(requestId) }
+        where: {
+          requestId: parseInt(requestId),
+          OR: [{ invoiceId: paymentId }, { paymentId: paymentId }]
+        }
       });
 
       if (transaction && transaction.status !== 'paid') {
-        // تحديث معاملة الدفع
         await db.paymentTransaction.update({
           where: { id: transaction.id },
-          data: { status: 'paid', paidAt: new Date() }
+          data: {
+            status: 'paid',
+            paidAt: new Date(),
+            paymentId: invoiceStatus.PaymentId ? String(invoiceStatus.PaymentId) : transaction.paymentId
+          }
         });
 
-        // تحديث حالة الطلب
         const updateData: any = { paymentStatus: 'paid' };
-        
+
         if (transaction.type === 'visit_fee') {
           updateData.visitFeePaid = true;
           updateData.status = 'in_progress';
@@ -58,14 +60,13 @@ export async function GET(request: NextRequest) {
 
         console.log('✅ تم تحديث حالة الطلب إلى:', updateData.status);
 
-        // إنشاء إشعار
         if (req.clientId) {
           await db.notification.create({
             data: {
               userId: req.clientId,
               title: '✅ تم تأكيد الدفع',
-              body: transaction.type === 'visit_fee' 
-                ? 'تم دفع دفعة الزيارة بنجاح' 
+              body: transaction.type === 'visit_fee'
+                ? 'تم دفع دفعة الزيارة بنجاح'
                 : 'تم الدفع النهائي بنجاح',
               type: 'payment_confirmed'
             }
@@ -73,14 +74,14 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         status: 'paid',
         message: 'تم تأكيد الدفع بنجاح'
       });
     } else {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         status: invoiceStatus.InvoiceStatus,
         message: 'الدفع لم يكتمل بعد'
       });

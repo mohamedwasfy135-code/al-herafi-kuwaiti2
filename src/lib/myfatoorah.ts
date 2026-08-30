@@ -22,7 +22,7 @@ export interface CreateInvoiceData {
 
 export async function createInvoice(data: CreateInvoiceData) {
   console.log('🔑 التحقق من مفتاح API:', API_KEY ? `موجود (يبدأ بـ: ${API_KEY.substring(0, 15)}...)` : 'مفقود ❌');
-  
+
   if (!API_KEY) {
     throw new Error('مفتاح MYFATOORAH_API_KEY غير موجود في ملف .env');
   }
@@ -36,12 +36,11 @@ export async function createInvoice(data: CreateInvoiceData) {
       MobileCountryCode: 512,
       CustomerMobile: data.CustomerMobile || '00000000',
       CustomerEmail: data.CustomerEmail || 'test@test.com',
-      // ✅ استخدام رابط Vercel الحقيقي للـ Callback
       CallBackUrl: `${APP_URL}/api/myfatoorah-callback`,
       ErrorUrl: `${APP_URL}/payment/failed`,
       Language: "ar",
       CustomerReference: `INV-${Date.now()}`,
-      InvoiceItems: (data.InvoiceItems && data.InvoiceItems.length > 0) 
+      InvoiceItems: (data.InvoiceItems && data.InvoiceItems.length > 0)
         ? data.InvoiceItems.map(item => ({
             ItemName: item.ItemName,
             Quantity: parseInt(String(item.Quantity)),
@@ -99,15 +98,16 @@ export async function createInvoice(data: CreateInvoiceData) {
   }
 }
 
-export async function getInvoiceStatus(invoiceId: string) {
+export async function getInvoiceStatus(key: string, keyType: 'InvoiceId' | 'PaymentId' = 'InvoiceId') {
   try {
-    const response = await fetch(`${BASE_URL}/v2/GetPaymentStatus?paymentId=${invoiceId}`, {
-      method: 'GET',
+    const response = await fetch(`${BASE_URL}/v2/GetPaymentStatus`, {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
+      body: JSON.stringify({ Key: key, KeyType: keyType }),
       cache: 'no-store',
     });
 
