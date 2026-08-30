@@ -1,10 +1,10 @@
-// ✅ هذا السطر يمنع Vercel من محاولة بناء الصفحة مسبقاً
-export const dynamic = 'force-dynamic'
-
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+
+// ✅ هذا السطر يمنع Vercel من محاولة بناء الصفحة مسبقاً (Static Generation)
+export const dynamic = 'force-dynamic'
 
 export default function CreateRequestPage() {
   const router = useRouter()
@@ -48,7 +48,7 @@ export default function CreateRequestPage() {
     setError('')
 
     if (!user || !user.id) {
-      setError('❌ يرجى تسجيل الدخول أولاً')
+      setError(' يرجى تسجيل الدخول أولاً')
       router.push('/login')
       return
     }
@@ -84,7 +84,7 @@ export default function CreateRequestPage() {
         setError('❌ ' + (data.error || 'فشل إنشاء الطلب'))
       }
     } catch (err) {
-      setError(' حدث خطأ في الاتصال بالخادم')
+      setError('حدث خطأ في الاتصال بالخادم')
     } finally {
       setSubmitting(false)
     }
