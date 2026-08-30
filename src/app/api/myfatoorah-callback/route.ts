@@ -4,25 +4,40 @@ import { db } from '@/lib/db';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const paymentId = searchParams.get('paymentId') || searchParams.get('id');
+    
+    // ماي فاتورة ترجع InvoiceId و PaymentId، نستخدم كلاهما للبحث
+    const invoiceId = searchParams.get('paymentId') || searchParams.get('id');
+    const paymentIdParam = searchParams.get('paymentId');
     const status = searchParams.get('status');
 
-    console.log('📥 [Callback] استلام إشعار:', { paymentId, status });
+    console.log('📥 [Callback] استلام إشعار:', { invoiceId, paymentIdParam, status });
 
-    if (!paymentId) {
-      console.error('❌ PaymentId مفقود من الرابط');
+    if (!invoiceId) {
+      console.error('❌ معرف الفاتورة مفقود من الرابط');
       return NextResponse.redirect(new URL('/dashboard/client?msg=callback_error', request.url));
     }
 
-    // البحث عن المعاملة باستخدام paymentId
-    const transaction = await db.paymentTransaction.findFirst({
-      where: { paymentId },
+    // ✅ البحث باستخدام invoiceId أولاً (لأنه الأكثر دقة وثباتاً)
+    let transaction = await db.paymentTransaction.findFirst({
+      where: { 
+        OR: [
+          { paymentId: invoiceId },
+          { invoiceId: invoiceId } // حقل مخصص لربط الفاتورة بالمعاملة
+        ]
+      },
       include: { request: true }
     });
 
+    // إذا لم نجد، نحاول البحث بأي PaymentId آخر مرسل
+    if (!transaction && paymentIdParam && paymentIdParam !== invoiceId) {
+      transaction = await db.paymentTransaction.findFirst({
+        where: { paymentId: paymentIdParam },
+        include: { request: true }
+      });
+    }
+
     if (!transaction) {
-      console.error(`❌ لم يتم العثور على معاملة بـ paymentId: ${paymentId}`);
-      // توجيه العميل للوحة التحكم مع رسالة خطأ واضحة
+      console.error(` لم يتم العثور على معاملة للفاتورة: ${invoiceId}`);
       return NextResponse.redirect(new URL('/dashboard/client?msg=transaction_not_found', request.url));
     }
 
@@ -43,24 +58,21 @@ export async function GET(request: NextRequest) {
         updateData.status = 'paid';
       }
 
-      // تحديث حالة الطلب
-      await db.request.update({
-        where: { id: transaction.request.id },
-        data: updateData
-      });
-
-      // تحديث حالة المعاملة
-      await db.paymentTransaction.update({
-        where: { id: transaction.id },
-        data: { status: 'paid', updatedAt: new Date() }
-      });
+      // تحديث حالة الطلب والمعاملة في عملية واحدة آمنة
+      await db.$transaction([
+        db.request.update({
+          where: { id: transaction.request.id },
+          data: updateData
+        }),
+        db.paymentTransaction.update({
+          where: { id: transaction.id },
+          data: { status: 'paid', updatedAt: new Date() }
+        })
+      ]);
 
       console.log('✅ تم تحديث الحالة بنجاح:', updateData);
-    } else {
-      console.warn('⚠️ الدفع ليس ناجحاً أو المعاملة مدفوعة مسبقاً:', { status, dbStatus: transaction.status });
     }
 
-    // التوجيه لصفحة العميل مع الرسالة المناسبة
     const msg = status === 'success' 
       ? (transaction.type === 'visit_fee' ? 'visit_fee_paid' : 'final_payment_paid')
       : 'payment_failed';
@@ -69,7 +81,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('💥 خطأ فادح في Callback:', error);
-    // في حالة الخطأ الفادح، نوجه العميل للوحة التحكم مع رسالة خطأ
     return NextResponse.redirect(new URL('/dashboard/client?msg=callback_error', request.url));
   }
 }
