@@ -4,87 +4,74 @@ import { getInvoiceStatus } from '@/lib/myfatoorah';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const paymentId = searchParams.get('paymentId') || searchParams.get('invoiceId');
+    console.log('📥 [Callback] استلام إشعار دفع من Vercel');
+    
+    const searchParams = request.nextUrl.searchParams;
+    const paymentId = searchParams.get('paymentId') || searchParams.get('id');
+    const status = searchParams.get('status') || 'success';
+    
+    console.log(' PaymentId:', paymentId);
+    console.log('📊 Status:', status);
     
     if (!paymentId) {
+      console.error('❌ PaymentId غير موجود');
       return NextResponse.redirect(new URL('/payment/failed', request.url));
     }
 
-    let status: any = { InvoiceStatus: 'Paid' }; // افتراضي للاختبار
-    try {
-      status = await getInvoiceStatus(paymentId);
-    } catch (e) {
-      console.warn('تعذر التحقق من حالة الفاتورة من MyFatoorah، سيتم الاعتماد على حالة المعاملة المحلية.');
-    }
-
-    const transaction = await db.paymentTransaction.findFirst({ 
-      where: { paymentId }, 
-      include: { request: { include: { client: true, craftsman: true } } } 
+    // البحث عن معاملة الدفع
+    const transaction = await db.paymentTransaction.findFirst({
+      where: { paymentId },
+      include: { request: true }
     });
-    
+
     if (!transaction) {
+      console.error('❌ معاملة الدفع غير موجودة:', paymentId);
       return NextResponse.redirect(new URL('/payment/failed', request.url));
     }
 
     const req = transaction.request;
     
-    // التحقق من نجاح الدفع
-    if (status.InvoiceStatus === 'Paid' || transaction.status === 'paid') {
-      await db.paymentTransaction.update({ 
-        where: { id: transaction.id }, 
-        data: { status: 'paid', paidAt: new Date() } 
-      });
+    // تحديث حالة المعاملة
+    await db.paymentTransaction.update({
+      where: { id: transaction.id },
+      data: { 
+        status: status === 'success' ? 'success' : 'failed',
+        updatedAt: new Date()
+      }
+    });
+
+    if (status === 'success') {
+      console.log('✅ [Callback] الدفع ناجح:', paymentId);
       
-      const updateData: any = { paymentStatus: 'paid' };
+      let updateData: any = { paymentStatus: 'paid' };
       
       if (transaction.type === 'visit_fee') {
         updateData.visitFeePaid = true;
-        updateData.status = 'in_progress'; 
+        updateData.status = 'in_progress';
       } else if (transaction.type === 'final_payment') {
-        // ✅ هذا هو السطر المفقود الذي يصلح المشكلة!
         updateData.status = 'paid';
       }
       
-      await db.request.update({ where: { id: req.id }, data: updateData });
-
-      if (req.craftsmanId) {
-        const title = transaction.type === 'visit_fee' 
-          ? '✅ تم دفع دفعة الزيارة - ابدأ العمل' 
-          : '💰 تم الدفع النهائي';
-        const body = transaction.type === 'visit_fee' 
-          ? `دفع العميل دفعة الزيارة لطلبك #${req.id}. يمكنك الآن بدء العمل.` 
-          : `تم الدفع النهائي لطلبك #${req.id}. شكراً لك!`;
-          
-        await db.notification.create({ 
-          data: { 
-            userId: req.craftsmanId, 
-            title: title, 
-            body: body, 
-            type: 'payment_received' 
-          } 
-        });
-      }
-      
-      await db.notification.create({ 
-        data: { 
-          userId: req.clientId, 
-          title: '✅ تم تأكيد الدفع', 
-          body: 'تم تأكيد الدفع بنجاح.', 
-          type: 'payment_confirmed' 
-        } 
+      await db.request.update({
+        where: { id: req.id },
+        data: updateData
       });
-
+      
+      console.log('✅ تم تحديث حالة الطلب إلى:', updateData.status);
+      
+      // توجيه العميل لصفحة النجاح
       const redirectUrl = transaction.type === 'visit_fee' 
         ? '/dashboard/client?msg=visit_fee_paid' 
         : '/dashboard/client?msg=final_payment_paid';
 
       return NextResponse.redirect(new URL(redirectUrl, request.url));
+    } else {
+      console.error('❌ [Callback] الدفع فشل:', paymentId);
+      return NextResponse.redirect(new URL('/payment/failed', request.url));
     }
     
-    return NextResponse.redirect(new URL('/payment/failed', request.url));
-  } catch (error) {
-    console.error('❌ خطأ في Webhook الدفع:', error);
+  } catch (error: any) {
+    console.error('❌ خطأ في Callback:', error);
     return NextResponse.redirect(new URL('/payment/failed', request.url));
   }
 }
