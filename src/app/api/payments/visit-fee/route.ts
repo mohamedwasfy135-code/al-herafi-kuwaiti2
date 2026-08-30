@@ -23,24 +23,24 @@ export async function POST(request: NextRequest) {
 
     // إنشاء الفاتورة في ماي فاتورة
     const invoice = await createInvoice({
-      InvoiceValue: 3, // دفعة الزيارة
+      InvoiceValue: 3,
       CustomerName: req.client.name || 'عميل',
       CustomerMobile: req.client.phone || '00000000',
       CustomerEmail: req.client.email || 'test@test.com',
-      CallBackUrl: '', // سيتم تحديده تلقائياً داخل createInvoice
+      CallBackUrl: '',
       ErrorUrl: '',
       InvoiceItems: [{ ItemName: 'دفعة زيارة', Quantity: 1, UnitPrice: 3 }]
     });
 
-    // ✅ حفظ معاملة الدفع في قاعدة البيانات فور نجاح إنشاء الفاتورة
+    // ✅ حفظ معاملة الدفع باستخدام الحقول المتاحة فقط في Prisma Schema
     await db.paymentTransaction.create({
       data: {
-        paymentId: String(invoice.InvoiceId), // استخدام InvoiceId كمرجع
+        paymentId: String(invoice.InvoiceId),
         requestId: req.id,
         type: 'visit_fee',
         amount: 3,
         status: 'pending',
-        metadata: JSON.stringify({ invoiceUrl: invoice.PaymentURL })
+        paymentUrl: invoice.PaymentURL // حفظ الرابط هنا بدلاً من metadata
       }
     });
 
