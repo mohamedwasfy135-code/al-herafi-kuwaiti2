@@ -1,6 +1,9 @@
 const API_KEY = process.env.MYFATOORAH_API_KEY?.trim();
 const BASE_URL = (process.env.MYFATOORAH_BASE_URL || 'https://apitest.myfatoorah.com').replace(/\/+$/, '');
 
+// ✅ استخدام NEXT_PUBLIC_APP_URL من Vercel تلقائياً
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://al-herafi-kuwaiti2.vercel.app';
+
 export interface InvoiceItem {
   ItemName: string;
   Quantity: number;
@@ -33,9 +36,9 @@ export async function createInvoice(data: CreateInvoiceData) {
       MobileCountryCode: 512,
       CustomerMobile: data.CustomerMobile || '00000000',
       CustomerEmail: data.CustomerEmail || 'test@test.com',
-      // استخدام رابط وهمي لأن ماي فاتورة تحظر localhost
-      CallBackUrl: 'https://example.com/callback',
-      ErrorUrl: 'https://example.com/error',
+      // ✅ استخدام رابط Vercel الحقيقي للـ Callback
+      CallBackUrl: `${APP_URL}/api/payments/callback`,
+      ErrorUrl: `${APP_URL}/payment/failed`,
       Language: "ar",
       CustomerReference: `INV-${Date.now()}`,
       InvoiceItems: (data.InvoiceItems && data.InvoiceItems.length > 0) 
@@ -49,7 +52,7 @@ export async function createInvoice(data: CreateInvoiceData) {
 
     const endpoint = `${BASE_URL}/v2/SendPayment`;
     console.log('📤 جاري إرسال الطلب إلى:', endpoint);
-    console.log('📦 Payload:', JSON.stringify(payload, null, 2));
+    console.log('🌐 CallBackUrl:', payload.CallBackUrl);
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -83,7 +86,6 @@ export async function createInvoice(data: CreateInvoiceData) {
 
     if (result.IsSuccess) {
       console.log('✅ تم إنشاء الفاتورة بنجاح. InvoiceId:', result.Data.InvoiceId);
-      console.log('💳 PaymentURL:', result.Data.InvoiceURL);
       return {
         InvoiceId: result.Data.InvoiceId,
         PaymentURL: result.Data.InvoiceURL,
