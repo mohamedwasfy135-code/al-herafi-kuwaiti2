@@ -7,33 +7,63 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model PaymentTransaction {
-  id          Int       @id @default(autoincrement())
-  paymentId   String
-  invoiceId   String?
-  requestId   Int
-  type        String
-  amount      Float
-  status      String
-  paymentUrl  String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  email     String   @unique
+  phone     String?
+  password  String
+  role      String   @default("client") // client, craftsman, admin
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  requests  Request[]
+}
 
-  request     Request   @relation(fields: [requestId], references: [id])
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String
+  icon        String?
+  description String?
+  createdAt   DateTime @default(now())
+  
+  requests    Request[]
 }
 
 model Request {
-  id            Int       @id @default(autoincrement())
-  status        String
-  visitFeePaid  Boolean   @default(false)
+  id            Int                @id @default(autoincrement())
+  description   String
+  address       String
+  governorate   String?
+  city          String?
+  type          String             @default("service")
+  status        String             @default("pending")
+  visitFeePaid  Boolean            @default(false)
   paymentStatus String?
+  proposedPrice Float?
+  finalPrice    Float?
   clientId      Int?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  categoryId    Int?
+  craftsmanId   Int?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
+  client        User?              @relation(fields: [clientId], references: [id])
+  category      Category?          @relation(fields: [categoryId], references: [id])
   transactions  PaymentTransaction[]
-  // ... باقي حقول الجدول الموجودة لديك مسبقاً
 }
 
-// ️ مهم: تأكد من إضافة باقي الموديلات (User, Category, etc.) 
-// التي كانت موجودة في ملفك الأصلي هنا، لأن هذا الأمر سيستبدل الملف بالكامل.
+model PaymentTransaction {
+  id          Int      @id @default(autoincrement())
+  paymentId   String
+  invoiceId   String?  // ✅ الحقل الجديد المضاف
+  requestId   Int
+  type        String   // visit_fee, final_payment
+  amount      Float
+  status      String   @default("pending") // pending, paid, failed
+  paymentUrl  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  request     Request  @relation(fields: [requestId], references: [id])
+}
