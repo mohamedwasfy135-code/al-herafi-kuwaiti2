@@ -813,4 +813,6 @@ model PaymentTransaction {
   invoiceId  String?
   paymentUrl String?
   createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  request    Request   @relation(fields: [requestId], references: [id])
 }

@@ -6,30 +6,25 @@ async function main() {
   console.log('🌱 بدء إضافة الفئات (الحرف والمحلات) المطلوبة...');
 
   const categoriesData = [
-    // --- الحرف المطلوبة ---
-    { name: 'فني صحي', icon: 'wrench', description: 'صيانة وإصلاح السباكة' },
-    { name: 'فني كهربائي', icon: 'zap', description: 'صيانة وتمديدات الكهرباء' },
-    { name: 'فني تكييف', icon: 'snowflake', description: 'صيانة وتركيب المكيفات' },
-    { name: 'فني سيراميك', icon: 'grid', description: 'تركيب وصيانة السيراميك والبلاط' },
-    { name: 'فني عازل', icon: 'shield', description: 'عزل الأسطح والمباني' },
-    { name: 'فني كاميرات', icon: 'video', description: 'تركيب وصيانة كاميرات المراقبة' },
-    { name: 'فني انترنت واعمال هاتف', icon: 'wifi', description: 'تمديدات الشبكات والهواتف' },
-    { name: 'فني اتوميشن سيستم', icon: 'cpu', description: 'المنازل الذكية وأنظمة الأتمتة' },
-    { name: 'اعمال تنظيف', icon: 'sparkles', description: 'تنظيف المنازل والمباني' },
-    { name: 'فني صبغ', icon: 'paint-bucket', description: 'أعمال الدهان والصبغ' },
-    { name: 'نقل عفش', icon: 'truck', description: 'نقل الأثاث والعفش' },
-    { name: 'تنسيق حدائق', icon: 'tree', description: 'تصميم وصيانة الحدائق' },
-    
-    // --- اقتراحات لحرف إضافية شائعة (يمكنك حذفها من الكود إذا لم ترد) ---
-    { name: 'فني نجارة', icon: 'hammer', description: 'أعمال النجارة والمطابخ والأبواب' },
-    { name: 'فني حداد', icon: 'anvil', description: 'أعمال الحديد والأبواب والشبابيك' },
-    { name: 'فني أجهزة منزلية', icon: 'appliance', description: 'صيانة الغسالات والثلاجات والأفران' },
-    { name: 'مكافحة حشرات', icon: 'bug', description: 'رش ومكافحة الحشرات والقوارض' },
-
-    // --- المحلات المطلوبة ---
-    { name: 'محلات ادوات صحية', icon: 'store', description: 'بيع الأدوات الصحية ومستلزمات السباكة' },
-    { name: 'محلات ادوات كهرباء', icon: 'store', description: 'بيع الأدوات الكهربائية والإضاءة' },
-    { name: 'محلات مواد بناء', icon: 'store', description: 'بيع مواد البناء والأسمنت والحديد' },
+    { name: 'فني صحي', icon: 'wrench', type: 'service' },
+    { name: 'فني كهربائي', icon: 'zap', type: 'service' },
+    { name: 'فني تكييف', icon: 'snowflake', type: 'service' },
+    { name: 'فني سيراميك', icon: 'grid', type: 'service' },
+    { name: 'فني عازل', icon: 'shield', type: 'service' },
+    { name: 'فني كاميرات', icon: 'video', type: 'service' },
+    { name: 'فني انترنت واعمال هاتف', icon: 'wifi', type: 'service' },
+    { name: 'فني اتوميشن سيستم', icon: 'cpu', type: 'service' },
+    { name: 'اعمال تنظيف', icon: 'sparkles', type: 'service' },
+    { name: 'فني صبغ', icon: 'paint-bucket', type: 'service' },
+    { name: 'نقل عفش', icon: 'truck', type: 'service' },
+    { name: 'تنسيق حدائق', icon: 'tree', type: 'service' },
+    { name: 'فني نجارة', icon: 'hammer', type: 'service' },
+    { name: 'فني حداد', icon: 'anvil', type: 'service' },
+    { name: 'فني أجهزة منزلية', icon: 'appliance', type: 'service' },
+    { name: 'مكافحة حشرات', icon: 'bug', type: 'service' },
+    { name: 'محلات ادوات صحية', icon: 'store', type: 'business' },
+    { name: 'محلات ادوات كهرباء', icon: 'store', type: 'business' },
+    { name: 'محلات مواد بناء', icon: 'store', type: 'business' },
   ];
 
   for (const cat of categoriesData) {
