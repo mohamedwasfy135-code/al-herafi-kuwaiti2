@@ -47,6 +47,21 @@ export default function LoginModal({ callbackUrl, onSuccess, onClose }: LoginMod
     }
   }, [onClose])
 
+  // دالة مساعدة للتوجيه بعد الدخول
+  const redirectAfterLogin = (user: { id: string; name: string; role: string }) => {
+    if (user.role === 'craftsman') {
+      router.push('/craftsman')
+    } else if (user.role === 'client') {
+      router.push('/dashboard')        // ✅ لوحة العميل الجديدة
+    } else if (user.role === 'admin') {
+      router.push('/admin')
+    } else if (callbackUrl) {
+      router.push(callbackUrl)
+    } else {
+      router.refresh()
+    }
+  }
+
   const handleLogin = async () => {
     if (!form.phone || !form.password) {
       toast.error('رقم الجوال وكلمة المرور مطلوبان')
@@ -70,15 +85,7 @@ export default function LoginModal({ callbackUrl, onSuccess, onClose }: LoginMod
 
       toast.success('مرحباً ' + data.user.name)
       localStorage.setItem('sana3i_user', JSON.stringify(data.user))
-
-      if (data.user.role === 'craftsman') {
-        router.push('/craftsman/dashboard')
-      } else if (callbackUrl) {
-        router.push(callbackUrl)
-      } else {
-        router.refresh()
-      }
-
+      redirectAfterLogin(data.user)
       onSuccess(data.user)
 
     } catch {
@@ -111,15 +118,7 @@ export default function LoginModal({ callbackUrl, onSuccess, onClose }: LoginMod
 
       toast.success('أهلاً بك ' + data.user.name)
       localStorage.setItem('sana3i_user', JSON.stringify(data.user))
-
-      if (data.user.role === 'craftsman') {
-        router.push('/craftsman/dashboard')
-      } else if (callbackUrl) {
-        router.push(callbackUrl)
-      } else {
-        router.refresh()
-      }
-
+      redirectAfterLogin(data.user)
       onSuccess(data.user)
 
     } catch {
@@ -144,7 +143,7 @@ export default function LoginModal({ callbackUrl, onSuccess, onClose }: LoginMod
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-600 transition"
           >
             ✕
           </button>

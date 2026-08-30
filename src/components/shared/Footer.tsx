@@ -10,7 +10,7 @@ export default function Footer() {
               <span className="text-2xl">🔧</span>
               الحرفي الكويتي
             </h3>
-            <p className="text-gray-400 text-sm leading-relaxed">
+            <p className="text-gray-600 text-sm leading-relaxed">
               منصة ربط العملاء بالحرفيين والمحلات في الكويت.
               تصفح الخدمات، اطلب حرفي، أو تسوق من المحلات.
             </p>
@@ -18,7 +18,7 @@ export default function Footer() {
 
           <div>
             <h4 className="font-semibold mb-3">روابط سريعة</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
+            <ul className="space-y-2 text-sm text-gray-600">
               <li>
                 <Link href="/services" className="hover:text-white transition">
                   الخدمات
@@ -48,7 +48,7 @@ export default function Footer() {
                   <h4 className="font-bold group-hover:text-blue-400 transition">
                     انتقل إلى البرنامج الإداري المحاسبي
                   </h4>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-gray-600 mt-1">
                     إدارة فواتير · سندات · محاسبة · مخزون
                   </p>
                 </div>
@@ -57,7 +57,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 pt-6 text-center text-sm text-gray-500">
+        <div className="border-t border-gray-800 pt-6 text-center text-sm text-gray-700">
           © {new Date().getFullYear()} الحرفي الكويتي - جميع الحقوق محفوظة
         </div>
       </div>

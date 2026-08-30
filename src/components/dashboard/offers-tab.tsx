@@ -264,7 +264,7 @@ export function OffersTab() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-gray-500">{inactiveOffers.length}</p>
+            <p className="text-2xl font-bold text-gray-700">{inactiveOffers.length}</p>
             <p className="text-xs text-muted-foreground">عروض غير نشطة</p>
           </CardContent>
         </Card>
@@ -359,7 +359,7 @@ export function OffersTab() {
             {inactiveOffers.map((offer) => (
               <Card key={offer.id} className="relative overflow-hidden opacity-60">
                 <div className="flex h-20 items-center justify-center bg-gray-50">
-                  <Tag className="h-8 w-8 text-gray-300" />
+                  <Tag className="h-8 w-8 text-gray-700" />
                 </div>
                 <CardContent className="p-4 space-y-2">
                   <h3 className="font-semibold text-muted-foreground">{offer.title}</h3>

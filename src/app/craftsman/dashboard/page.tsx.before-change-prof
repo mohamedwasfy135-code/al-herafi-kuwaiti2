@@ -1,0 +1,260 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+
+export default function CraftsmanDashboard() {
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [activeTab, setActiveTab] = useState<'services' | 'requests' | 'earnings' | 'chats'>('services')
+  const [isAvailable, setIsAvailable] = useState(true)
+  const [unavailableUntil, setUnavailableUntil] = useState<string | null>(null)
+  const [loadingAvailability, setLoadingAvailability] = useState(false)
+
+  const [services, setServices] = useState<any[]>([])
+  const [loadingServices, setLoadingServices] = useState(true)
+
+  const [requests, setRequests] = useState<any[]>([])
+  const [loadingRequests, setLoadingRequests] = useState(true)
+
+  const [earnings, setEarnings] = useState<any[]>([])
+  const [loadingEarnings, setLoadingEarnings] = useState(true)
+  const [payoutAmount, setPayoutAmount] = useState('')
+  const [payoutLoading, setPayoutLoading] = useState(false)
+  const [payoutMessage, setPayoutMessage] = useState('')
+
+  useEffect(() => {
+    const stored = localStorage.getItem('sana3i_user')
+    if (!stored) { router.push('/login'); return }
+    const parsed = JSON.parse(stored)
+    if (parsed.role !== 'craftsman') { router.push('/'); return }
+    setUser(parsed)
+    loadServices(parsed.id)
+    loadRequests(parsed.id)
+    loadEarnings(parsed.id)
+    loadAvailability(parsed.id)
+  }, [router])
+
+  const loadAvailability = async (uid: string) => {
+    try {
+      const res = await fetch(`/api/craftsman/availability?craftsmanId=${uid}`)
+      const data = await res.json()
+      setIsAvailable(data.is_available ?? true)
+      setUnavailableUntil(data.unavailable_until)
+    } catch {}
+  }
+
+  const toggleAvailability = async () => {
+    if (!user) return
+    setLoadingAvailability(true)
+    try {
+      const newState = isAvailable ? false : true
+      const res = await fetch('/api/craftsman/availability', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ craftsmanId: user.id, isAvailable: newState, durationHours: 4 })
+      })
+      if (res.ok) {
+        setIsAvailable(newState)
+        if (!newState) {
+          const data = await res.json()
+          setUnavailableUntil(data.unavailable_until)
+        } else {
+          setUnavailableUntil(null)
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling availability:', error)
+    } finally {
+      setLoadingAvailability(false)
+    }
+  }
+
+  const loadServices = async (uid: string) => {
+    try { const res = await fetch(`/api/services?craftsmanId=${uid}`); const data = await res.json(); setServices(data.data || data.services || []) } catch {} finally { setLoadingServices(false) }
+  }
+  const loadRequests = async (uid: string) => {
+    try { const res = await fetch(`/api/requests?craftsmanId=${uid}`); const data = await res.json(); setRequests(data.requests || data.data || []) } catch {} finally { setLoadingRequests(false) }
+  }
+  const loadEarnings = async (uid: string) => {
+    try { const res = await fetch(`/api/earnings?craftsmanId=${uid}`); const data = await res.json(); setEarnings(data.earnings || data.data || []) } catch {} finally { setLoadingEarnings(false) }
+  }
+
+  const updateRequestStatus = async (requestId: string, newStatus: string) => {
+    try {
+      await fetch(`/api/requests/${requestId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) })
+      if (user?.id) loadRequests(user.id)
+    } catch { alert('فشل تحديث الحالة') }
+  }
+
+  const requestPayout = async () => {
+    if (!payoutAmount || isNaN(Number(payoutAmount)) || Number(payoutAmount) <= 0) { setPayoutMessage('يرجى إدخال مبلغ صحيح'); return }
+    setPayoutLoading(true); setPayoutMessage('')
+    try {
+      const res = await fetch('/api/payout-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ craftsmanId: user.id, amount: parseFloat(payoutAmount) }) })
+      if (res.ok) { setPayoutMessage('تم إرسال طلب الدفعة بنجاح'); setPayoutAmount('') }
+      else { const d = await res.json(); setPayoutMessage(d.error || 'فشل في إرسال الطلب') }
+    } catch { setPayoutMessage('تعذر الاتصال بالخادم') } finally { setPayoutLoading(false) }
+  }
+
+  const getStatusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      pending: 'قيد الانتظار', notified: 'تم الإشعار', accepted: 'مقبول',
+      in_progress: 'قيد التنفيذ', done: 'مكتمل', rejected: 'مرفوض',
+    }
+    return map[status] || status
+  }
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    localStorage.removeItem('sana3i_user')
+    setUser(null)
+    window.location.href = '/'
+  }
+
+  const getRemainingTime = () => {
+    if (!unavailableUntil) return null
+    const end = new Date(unavailableUntil)
+    const now = new Date()
+    const diff = Math.floor((end.getTime() - now.getTime()) / 1000 / 60)
+    if (diff <= 0) return null
+    const hours = Math.floor(diff / 60)
+    const minutes = diff % 60
+    return hours > 0 ? `${hours} ساعة و ${minutes} دقيقة` : `${minutes} دقيقة`
+  }
+
+  if (!user) return <div className="p-8 text-center">تحميل...</div>
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm p-3 flex justify-between items-center">
+        <Link href="/" className="text-blue-600 text-sm">← الرئيسية</Link>
+        <span className="font-bold">لوحة تحكم الحرفي</span>
+        <button onClick={handleLogout} className="text-sm text-red-600">خروج</button>
+      </header>
+
+      <div className="max-w-5xl mx-auto p-4">
+        <div className="flex justify-between items-center mb-4">
+          <p className="text-gray-600">مرحباً {user.name} 👋</p>
+          <button
+            onClick={toggleAvailability}
+            disabled={loadingAvailability}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${isAvailable ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+          >
+            {loadingAvailability ? 'جاري...' : (isAvailable ? '🟢 متاح - اضغط للتعطيل' : '🔴 غير متاح - اضغط للتفعيل')}
+          </button>
+        </div>
+        {!isAvailable && getRemainingTime() && (
+          <div className="bg-yellow-100 text-yellow-800 p-2 rounded-lg text-sm mb-4 text-center">
+            ⏰ غير متاح مؤقتاً - يعود تلقائياً بعد {getRemainingTime()}
+          </div>
+        )}
+
+        <div className="flex gap-2 mb-6 border-b pb-2">
+          {(['services','requests','earnings','chats'] as const).map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-t-lg text-sm font-medium ${activeTab===tab ? 'bg-white border border-b-white -mb-[2px] text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              {tab==='services'?'🛠️ خدماتي':tab==='requests'?'📋 طلباتي':tab==='earnings'?'💰 أرباحي':'💬 محادثات'}
+            </button>
+          ))}
+        </div>
+
+        {activeTab==='services' && (
+          <div>
+            <div className="flex justify-between mb-4">
+              <h2 className="text-xl font-semibold">خدماتي</h2>
+              {services.length === 0 && (
+                <button onClick={() => router.push('/craftsman/add-first-service')} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">+ إضافة خدمة</button>
+              )}
+            </div>
+            {loadingServices ? <p>جارٍ التحميل...</p> : services.length===0 ? (
+              <div className="bg-white rounded-xl p-6 text-center">
+                <p>لا توجد خدمات بعد</p>
+                <button onClick={() => router.push('/craftsman/add-first-service')} className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg">أضف خدمتك الأولى</button>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {services.map((s:any) => (
+                  <div key={s.id} className="bg-white rounded-xl border p-4 shadow-sm">
+                    <h3 className="font-bold text-lg mb-1">{s.title}</h3>
+                    {s.description && <p className="text-sm text-gray-500 mb-2">{s.description}</p>}
+                    <div className="flex justify-between items-center">
+                      <span className="text-blue-600 font-bold">{s.price} د.ك</span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {s.is_active ? 'نشط' : 'غير نشط'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">📌 ملاحظة: لا يمكن إضافة أكثر من خدمة واحدة</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab==='requests' && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4">الطلبات الواردة</h2>
+            {loadingRequests ? <p>جارٍ التحميل...</p> : requests.length===0 ? (
+              <div className="bg-white rounded-xl p-6 text-center"><p>لا توجد طلبات بعد</p></div>
+            ) : (
+              <div className="space-y-4">
+                {requests.map((r:any) => (
+                  <div key={r.id} className="bg-white rounded-xl border p-4 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div><h3 className="font-bold">{r.service_type || 'طلب'}</h3>{r.description && <p className="text-sm text-gray-500">{r.description}</p>}<p className="text-xs text-gray-400 mt-1">العميل: {r.client?.name || 'غير معروف'}</p></div>
+                      <div className="text-left"><span className="text-blue-600 font-bold">{r.price || r.estimated_price} د.ك</span></div>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">{getStatusLabel(r.status)}</span>
+                      {r.status==='pending' && (
+                        <>
+                          <button onClick={() => updateRequestStatus(r.id, 'accepted')} className="text-xs bg-green-600 text-white px-3 py-1 rounded">قبول</button>
+                          <button onClick={() => updateRequestStatus(r.id, 'rejected')} className="text-xs bg-red-600 text-white px-3 py-1 rounded">رفض</button>
+                        </>
+                      )}
+                      {r.status==='accepted' && <button onClick={() => updateRequestStatus(r.id, 'in_progress')} className="text-xs bg-yellow-600 text-white px-3 py-1 rounded">بدء التنفيذ</button>}
+                      {r.status==='in_progress' && <button onClick={() => updateRequestStatus(r.id, 'done')} className="text-xs bg-blue-600 text-white px-3 py-1 rounded">إنهاء</button>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab==='earnings' && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4">ملخص الأرباح</h2>
+            {loadingEarnings ? <p>جارٍ التحميل...</p> : earnings.length===0 ? (
+              <div className="bg-white rounded-xl p-6 text-center"><p>لا توجد أرباح مسجلة بعد</p></div>
+            ) : (
+              <div className="bg-white rounded-xl border overflow-hidden mb-6">
+                <table className="w-full text-sm"><thead className="bg-gray-50"><tr><th className="p-3 text-right">الطلب</th><th className="p-3 text-right">المبلغ</th><th className="p-3 text-right">التاريخ</th></tr></thead>
+                  <tbody>{earnings.map((e:any,i:number) => (<tr key={e.id||i} className="border-t"><td className="p-3">{e.requestId||'-'}</td><td className="p-3 font-semibold">{e.amount} د.ك</td><td className="p-3 text-gray-500">{e.createdAt?new Date(e.createdAt).toLocaleDateString('ar'):'-'}</td></tr>))}</tbody>
+                </table>
+              </div>
+            )}
+            <div className="bg-white rounded-xl border p-6 shadow-sm">
+              <h3 className="font-bold text-lg mb-3">طلب دفعة</h3>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1"><input type="number" step="0.1" value={payoutAmount} onChange={e => setPayoutAmount(e.target.value)} placeholder="المبلغ" className="w-full border rounded-lg px-3 py-2" /></div>
+                <button onClick={requestPayout} disabled={payoutLoading} className="bg-green-600 text-white px-6 py-2 rounded-lg">{payoutLoading ? 'جاري...' : 'طلب الدفعة'}</button>
+              </div>
+              {payoutMessage && <p className="mt-3 text-sm">{payoutMessage}</p>}
+            </div>
+          </div>
+        )}
+
+        {activeTab==='chats' && (
+          <div className="bg-white rounded-xl p-6 text-center">
+            <h2 className="text-xl font-semibold mb-4">محادثاتي</h2>
+            <p className="text-gray-500 mb-4">التواصل مع العملاء</p>
+            <button onClick={() => router.push('/chat')} className="bg-blue-600 text-white px-6 py-2 rounded-lg">الذهاب إلى المحادثات</button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

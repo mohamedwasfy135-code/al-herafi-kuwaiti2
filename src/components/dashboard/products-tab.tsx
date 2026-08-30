@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   GitMerge,
   Ban,
+  ImagePlus,
 } from 'lucide-react'
 import {
   Card,
@@ -72,6 +73,7 @@ interface Product {
   supplierId: number | null
   unit: string | null
   description: string | null
+  images?: string | null
   isActive: boolean
   isFeatured: boolean
 }
@@ -97,6 +99,7 @@ const defaultForm = {
   supplierId: '',
   unit: 'piece',
   description: '',
+  images: '',
 }
 
 export function ProductsTab({ initialEditId }: { initialEditId?: string | null } = {}) {
@@ -104,6 +107,7 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
   const [products, setProducts] = useState<Product[]>(sampleProducts)
   const [productCategories, setProductCategories] = useState<ProductCategory[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [globalCategories, setGlobalCategories] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -135,24 +139,35 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
         ])
         if (prodRes.ok) {
           const data = await prodRes.json()
-          if (data.length > 0) setProducts(data)
+          if (Array.isArray(data) && data.length > 0) setProducts(data)
         }
         if (catRes.ok) {
           const data = await catRes.json()
-          // Flatten categories
-          const flat: ProductCategory[] = []
-          const flatten = (cats: any[]) => {
-            for (const c of cats) {
-              flat.push({ id: c.id, name: c.name })
-              if (c.children) flatten(c.children)
+          if (Array.isArray(data)) {
+            // Flatten categories
+            const flat: ProductCategory[] = []
+            const flatten = (cats: any[]) => {
+              for (const c of cats) {
+                flat.push({ id: c.id, name: c.name })
+                if (c.children) flatten(c.children)
+              }
             }
+            flatten(data)
+            setProductCategories(flat)
           }
-          flatten(data)
-          setProductCategories(flat)
         }
         if (supRes.ok) {
           const data = await supRes.json()
-          setSuppliers(data.map((s: any) => ({ id: s.id, name: s.name })))
+          if (Array.isArray(data)) setSuppliers(data.map((s: any) => ({ id: s.id, name: s.name })))
+      // جلب الفئات العامة (فئات المحلات) للاختيار
+      try {
+        const globalCatRes = await fetch('/api/categories?type=shop,contractor,company,consultant');
+        if (globalCatRes.ok) {
+          const globalData = await globalCatRes.json();
+          const cats = Array.isArray(globalData) ? globalData : (globalData.categories || []);
+          setGlobalCategories(cats);
+        }
+      } catch (e) { console.error('Failed to fetch global categories', e) }
         }
       } catch {
         // Keep sample data
@@ -197,6 +212,7 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
       supplierId: product.supplierId ? String(product.supplierId) : '',
       unit: product.unit || 'piece',
       description: product.description || '',
+      images: (product as any).images || '',
     })
     setDialogOpen(true)
   }
@@ -223,6 +239,7 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
           supplierId: form.supplierId ? parseInt(form.supplierId) : null,
           unit: form.unit,
           description: form.description,
+          images: form.images || null,
         }),
       })
 
@@ -336,7 +353,7 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
         const prodRes = await fetch(`/api/products?businessId=${businessId}`)
         if (prodRes.ok) {
           const data = await prodRes.json()
-          if (data.length > 0) setProducts(data)
+          if (Array.isArray(data) && data.length > 0) setProducts(data)
         }
         toast.success(t('products_merge_success'))
         setMergeDialogOpen(false)
@@ -447,7 +464,17 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
                         </span>
                       )}
                     </div>
-
+                    <div className="text-left">
+                      <p
+                        className={`text-xs font-medium ${
+                          isLowStock(product.stockQuantity)
+                            ? 'text-red-600'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {t('products_stock')}: {product.stockQuantity}
+                      </p>
+                    </div>
                   </div>
                   <div className="flex gap-1 pt-1">
                     <Button
@@ -512,7 +539,9 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
                 <Label htmlFor="price">{t('products_price')} *</Label>
                 <Input
                   id="price"
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   value={form.price}
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
                   placeholder="0"
@@ -522,7 +551,9 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
                 <Label htmlFor="costPrice">{t('products_cost_price')}</Label>
                 <Input
                   id="costPrice"
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   value={form.costPrice}
                   onChange={(e) =>
                     setForm({ ...form, costPrice: e.target.value })
@@ -536,7 +567,9 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
                 <Label htmlFor="stock">{t('products_stock')}</Label>
                 <Input
                   id="stock"
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   value={form.stockQuantity}
                   onChange={(e) =>
                     setForm({ ...form, stockQuantity: e.target.value })
@@ -560,9 +593,6 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
                     <SelectItem value="liter">{t('unit_liter')}</SelectItem>
                     <SelectItem value="gallon">{t('unit_gallon')}</SelectItem>
                     <SelectItem value="box">{t('unit_box')}</SelectItem>
-                    <SelectItem value="roll">{t('unit_roll')}</SelectItem>
-                    <SelectItem value="pack">{t('unit_pack')}</SelectItem>
-                    <SelectItem value="piece_unit">{t('unit_piece_unit')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -580,7 +610,10 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
                   <SelectValue placeholder={t('products_select_category')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {productCategories.map((cat) => (
+                  {globalCategories.map((cat) => (
+                <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
+              ))}
+              {productCategories.map((cat) => (
                     <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -612,6 +645,67 @@ export function ProductsTab({ initialEditId }: { initialEditId?: string | null }
                 }
                 placeholder={t('products_desc_placeholder')}
               />
+            </div>
+            {/* Product Image */}
+            <div className="space-y-2">
+              <Label>{t('product_image')}</Label>
+              <div className="flex items-center gap-4">
+                <div className="h-20 w-20 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-200">
+                  {form.images ? (
+                    <img src={form.images.split(',')[0]} alt="Preview" className="h-20 w-20 object-cover rounded-lg" />
+                  ) : (
+                    <Package className="h-8 w-8 text-gray-700" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    id="product-image-upload"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                        toast.error(t('file_type_not_supported'))
+                        return
+                      }
+                      if (file.size > 500 * 1024) {
+                        toast.error(t('file_size_exceeds'))
+                        return
+                      }
+                      const reader = new FileReader()
+                      reader.onload = (ev) => {
+                        const result = ev.target?.result as string
+                        setForm({ ...form, images: result })
+                      }
+                      reader.readAsDataURL(file)
+                      e.target.value = ''
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                    onClick={() => document.getElementById('product-image-upload')?.click()}
+                  >
+                    <ImagePlus className="h-3.5 w-3.5" />
+                    {t('upload_image')}
+                  </Button>
+                  {form.images && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 h-7 text-xs"
+                      onClick={() => setForm({ ...form, images: '' })}
+                    >
+                      {t('remove_image')}
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter className="gap-2">

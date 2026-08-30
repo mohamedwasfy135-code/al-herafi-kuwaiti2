@@ -829,7 +829,7 @@ export default function GeneralLedgerPage() {
                     {formatCurrency(data.totalBalance, lang)}
                     <span className={`text-xs font-normal ml-1 opacity-70`}>{t('currency')}</span>
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">{data.count} {t('ledger_accounts')}</p>
+                  <p className="text-xs text-gray-700 mt-1">{data.count} {t('ledger_accounts')}</p>
                 </CardContent>
               </Card>
             )
@@ -923,14 +923,14 @@ export default function GeneralLedgerPage() {
                     {entry.debit > 0 ? (
                       <span className="text-rose-600 font-semibold">{formatCurrency(entry.debit, lang)}</span>
                     ) : (
-                      <span className="text-gray-300">—</span>
+                      <span className="text-gray-700">—</span>
                     )}
                   </TableCell>
                   <TableCell className="text-center font-mono text-sm">
                     {entry.credit > 0 ? (
                       <span className="text-emerald-600 font-semibold">{formatCurrency(entry.credit, lang)}</span>
                     ) : (
-                      <span className="text-gray-300">—</span>
+                      <span className="text-gray-700">—</span>
                     )}
                   </TableCell>
                   <TableCell className="text-center font-mono text-sm font-semibold">
@@ -1090,11 +1090,11 @@ export default function GeneralLedgerPage() {
           <h1 className="text-2xl font-bold">{t('app_name')}</h1>
           <h2 className="text-lg font-semibold text-gray-700 mt-1">{t('ledger_print_title')}</h2>
           {(dateFrom || dateTo) && (
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-700 mt-1">
               {t('ledger_from')}: {dateFrom || '—'} {t('ledger_to')}: {dateTo || '—'}
             </p>
           )}
-          <p className="text-xs text-gray-400 mt-1">{new Date().toLocaleDateString(lang === 'en' ? 'en-KW' : 'ar-KW')}</p>
+          <p className="text-xs text-gray-600 mt-1">{new Date().toLocaleDateString(lang === 'en' ? 'en-KW' : 'ar-KW')}</p>
         </div>
       </div>
       {/* Header */}

@@ -400,7 +400,7 @@ export function UsersPermissionsTab() {
                           {t(roleInfo.labelKey)}
                         </span>
                         {!u.isActive && (
-                          <Badge className="bg-gray-100 text-gray-500 border-gray-200 text-xs">{t('users_inactive')}</Badge>
+                          <Badge className="bg-gray-100 text-gray-700 border-gray-200 text-xs">{t('users_inactive')}</Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
@@ -572,7 +572,7 @@ export function UsersPermissionsTab() {
                 />
                 <button
                   type="button"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-600"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -655,7 +655,7 @@ export function UsersPermissionsTab() {
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{t('status')}</Label>
-                    <Badge className={editUser.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}>
+                    <Badge className={editUser.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700'}>
                       {editUser.isActive ? t('employees_active_yes') : t('users_inactive')}
                     </Badge>
                   </div>
@@ -730,7 +730,7 @@ export function UsersPermissionsTab() {
                       className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition text-sm ${
                         editPermissions[perm.key]
                           ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                          : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                          : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
                       }`}
                     >
                       <input

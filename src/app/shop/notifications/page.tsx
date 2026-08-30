@@ -273,7 +273,7 @@ export default function NotificationsPage() {
       case 'sent': return <CheckCircle2 className="h-4 w-4 text-emerald-500" />
       case 'pending': return <Clock className="h-4 w-4 text-amber-500" />
       case 'failed': return <XCircle className="h-4 w-4 text-red-500" />
-      default: return <Clock className="h-4 w-4 text-gray-400" />
+      default: return <Clock className="h-4 w-4 text-gray-600" />
     }
   }
 
@@ -314,7 +314,7 @@ export default function NotificationsPage() {
             <Bell className="h-6 w-6 text-emerald-600" />
             {t('notifications_title')}
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-700 mt-1">
             {t('notifications_whatsapp')} &amp; {t('notifications_ai_analysis')}
           </p>
         </div>
@@ -456,19 +456,19 @@ export default function NotificationsPage() {
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                        <p className="text-xs text-gray-500">{t('dashboard_total_revenue')}</p>
+                        <p className="text-xs text-gray-700">{t('dashboard_total_revenue')}</p>
                         <p className="text-lg font-bold text-emerald-700">{report.sales.total.toFixed(3)} {t('currency')}</p>
                       </div>
                       <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800">
-                        <p className="text-xs text-gray-500">{t('dashboard_total_expenses')}</p>
+                        <p className="text-xs text-gray-700">{t('dashboard_total_expenses')}</p>
                         <p className="text-lg font-bold text-orange-700">{report.expenses.total.toFixed(3)} {t('currency')}</p>
                       </div>
                       <div className="p-3 rounded-lg bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800">
-                        <p className="text-xs text-gray-500">{t('finance_purchases')}</p>
+                        <p className="text-xs text-gray-700">{t('finance_purchases')}</p>
                         <p className="text-lg font-bold text-teal-700">{report.purchases.total.toFixed(3)} {t('currency')}</p>
                       </div>
                       <div className="p-3 rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800">
-                        <p className="text-xs text-gray-500">{t('notifications_daily_net_cash')}</p>
+                        <p className="text-xs text-gray-700">{t('notifications_daily_net_cash')}</p>
                         <p className={`text-lg font-bold ${report.netCashFlow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                           {report.netCashFlow.toFixed(3)} {t('currency')}
                         </p>
@@ -592,7 +592,7 @@ export default function NotificationsPage() {
                 <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-900">
                   <div>
                     <p className="font-medium text-sm">{t('notifications_ai_analysis')}</p>
-                    <p className="text-xs text-gray-500">{t('notifications_ai_recommendations')}</p>
+                    <p className="text-xs text-gray-700">{t('notifications_ai_recommendations')}</p>
                   </div>
                   <Switch checked={aiEnabled} onCheckedChange={setAiEnabled} />
                 </div>
@@ -680,8 +680,8 @@ export default function NotificationsPage() {
             <CardContent>
               {notificationLogs.length === 0 ? (
                 <div className="text-center py-8">
-                  <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">{t('notifications_no_notifications')}</p>
+                  <Bell className="h-12 w-12 text-gray-700 mx-auto mb-3" />
+                  <p className="text-gray-700">{t('notifications_no_notifications')}</p>
                 </div>
               ) : (
                 <ScrollArea className="max-h-96">
@@ -692,7 +692,7 @@ export default function NotificationsPage() {
                           {getStatusIcon(log.status)}
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium truncate">{log.title}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-700">
                               {getTypeLabel(log.type)} • {new Date(log.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-KW' : 'en-US')}
                             </p>
                           </div>

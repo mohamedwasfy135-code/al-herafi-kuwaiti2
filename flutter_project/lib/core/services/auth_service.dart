@@ -1,0 +1,537 @@
+// ═══════════════════════════════════════════════════════════════════
+// خدمة المصادقة — بديل FirebaseAuth
+// تستخدم Next.js API مع JWT tokens
+// الحرفي الكويتي — تحويل من Firebase إلى PostgreSQL/Prisma
+// ═══════════════════════════════════════════════════════════════════
+
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dart:convert';
+
+import 'api_service.dart';
+import 'socket_service.dart';
+import '../constants/app_constants.dart';
+
+/// نموذج المستخدم — بديل لـ Firebase User
+class Sana3iUser {
+  final String id;
+  final String name;
+  final String? email;
+  final String? phone;
+  final String role;
+  final String? avatarUrl;
+  final String? governorate;
+  final String? city;
+  final String? verificationStatus;
+  final String? businessId;
+  final String? businessName;
+  final String? businessRole;
+  final Map<String, dynamic>? permissions;
+
+  const Sana3iUser({
+    required this.id,
+    required this.name,
+    this.email,
+    this.phone,
+    required this.role,
+    this.avatarUrl,
+    this.governorate,
+    this.city,
+    this.verificationStatus,
+    this.businessId,
+    this.businessName,
+    this.businessRole,
+    this.permissions,
+  });
+
+  /// إنشاء من استجابة API
+  factory Sana3iUser.fromApi(Map<String, dynamic> data) {
+    return Sana3iUser(
+      id: data['id'] as String? ?? '',
+      name: data['name'] as String? ?? '',
+      email: data['email'] as String?,
+      phone: data['phone'] as String?,
+      role: data['role'] as String? ?? kRoleClient,
+      avatarUrl: data['avatarUrl'] as String? ?? data['avatar_url'] as String?,
+      governorate: data['governorate'] as String?,
+      city: data['city'] as String?,
+      verificationStatus: data['verificationStatus'] as String? ??
+          data['verification_status'] as String?,
+      businessId: data['businessId'] as String? ?? data['business_id'] as String?,
+      businessName: data['businessName'] as String?,
+      businessRole: data['businessRole'] as String?,
+      permissions: data['permissions'] as Map<String, dynamic>?,
+    );
+  }
+
+  /// تحويل إلى Map
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'name': name,
+    'email': email,
+    'phone': phone,
+    'role': role,
+    'avatarUrl': avatarUrl,
+    'governorate': governorate,
+    'city': city,
+    'verificationStatus': verificationStatus,
+    'businessId': businessId,
+    'businessName': businessName,
+    'businessRole': businessRole,
+  };
+
+  /// هل البريد مفعّل؟ (في النظام الجديد لا نحتاج تفعيل البريد)
+  bool get emailVerified => true;
+
+  /// هل هو أدمن
+  bool get isAdmin => role == kRoleAdmin;
+
+  /// هل هو حرفي
+  bool get isCraftsman => role == kRoleCraftsman;
+
+  /// هل هو عميل
+  bool get isClient => role == kRoleClient;
+
+  /// هل هو محل/شركة
+  bool get isBusiness => role == kRoleBusiness || role == kRoleOffice;
+
+  @override
+  String toString() => 'Sana3iUser(id: $id, name: $name, role: $role)';
+}
+
+/// خدمة المصادقة المركزية — بديل FirebaseAuth.instance
+class AuthService {
+  AuthService._();
+
+  static const _secureStorage = FlutterSecureStorage();
+  static const _userKey = 'current_user';
+  static const _tokenKey = 'auth_token';
+
+  // ══ الحالة الحالية ═══════════════════════════════════════════════
+
+  static Sana3iUser? _currentUser;
+  static final _controller = StreamController<Sana3iUser?>.broadcast();
+
+  /// المستخدم الحالي (مباشر، مثل FirebaseAuth.instance.currentUser)
+  static Sana3iUser? get currentUser => _currentUser;
+
+  /// Stream لتغييرات المستخدم (مثل FirebaseAuth.instance.userChanges())
+  static Stream<Sana3iUser?> get userChanges => _controller.stream;
+
+  /// هل المستخدم مسجل الدخول
+  static bool get isLoggedIn => _currentUser != null;
+
+  // ══ التهيئة ═════════════════════════════════════════════════════
+
+  /// تهيئة الخدمة — تستدعى عند بداية التطبيق
+  static Future<void> initialize() async {
+    debugPrint('🔐 AuthService: Initializing...');
+
+    // محاولة استعادة الجلسة من التخزين المحلي
+    await _restoreSession();
+
+    // ✅ الاتصال بـ Socket.IO بعد استعادة الجلسة
+    if (_currentUser != null) {
+      await SocketService.connect();
+    }
+
+    debugPrint('🔐 AuthService: Initialized. User: ${_currentUser?.name ?? 'none'}');
+  }
+
+  /// استعادة الجلسة المحفوظة
+  static bool _isTokenExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return true;
+      final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      final data = jsonDecode(payload) as Map;
+      final exp = data['exp'] as int?;
+      if (exp == null) return false;
+      return DateTime.fromMillisecondsSinceEpoch(exp * 1000)
+          .isBefore(DateTime.now().add(const Duration(seconds: 30)));
+    } catch (_) {
+      return true;
+    }
+  }
+
+  static Future<void> _restoreSession() async {
+    try {
+      final token = await ApiService.getToken();
+      if (token == null) {
+        _currentUser = null;
+        _controller.add(null);
+        return;
+      }
+
+      // ✅ فحص صلاحية التوكن محلياً أولاً
+      if (_isTokenExpired(token)) {
+        final refreshed = await ApiService.refreshToken();
+        if (!refreshed) {
+          await _clearSession();
+          return;
+        }
+      }
+
+      // ✅ التحقق عبر API
+      final response = await ApiService.get('/api/auth/me');
+      if (response.success && response.data != null) {
+        final userData = response.data!['user'] as Map<String, dynamic>?;
+        if (userData != null) {
+          _currentUser = Sana3iUser.fromApi(userData);
+          _controller.add(_currentUser);
+          await _saveUserLocal(_currentUser!);
+          debugPrint('🔐 Session restored: ${_currentUser!.name}');
+          return;
+        }
+      }
+
+      await _clearSession();
+    } catch (e) {
+      debugPrint('🔐 Error restoring session: $e');
+      await _loadLocalUser();
+    }
+  }
+
+  // ══ تسجيل الدخول ═════════════════════════════════════════════════
+
+  /// تسجيل الدخول بالهاتف وكلمة المرور
+  static Future<AuthResult> signInWithPhone({
+    required String phone,
+    required String password,
+  }) async {
+    try {
+      final response = await ApiService.post(
+        '/api/auth/login',
+        body: {
+          'phone': phone,
+          'password': password,
+        },
+        auth: false,
+      );
+
+      if (response.success && response.data != null) {
+        // حفظ التوكن
+        final token = response.data!['token'] as String?;
+        if (token != null) {
+          await ApiService.saveToken(token);
+        }
+
+        // حفظ بيانات المستخدم
+        final userData = response.data!['user'] as Map<String, dynamic>?;
+        if (userData != null) {
+          _currentUser = Sana3iUser.fromApi(userData);
+          _controller.add(_currentUser);
+          await _saveUserLocal(_currentUser!);
+
+          debugPrint('🔐 Login success: ${_currentUser!.name}');
+          return AuthResult.success(user: _currentUser!);
+        }
+      }
+
+      return AuthResult.failure(
+        error: response.errorMessage ?? 'فشل تسجيل الدخول',
+      );
+    } catch (e) {
+      debugPrint('🔐 Login error: $e');
+      return AuthResult.failure(error: 'خطأ في الاتصال بالخادم');
+    }
+  }
+
+  /// تسجيل الدخول بالبريد الإلكتروني وكلمة المرور
+  static Future<AuthResult> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await ApiService.post(
+        '/api/auth/login',
+        body: {
+          'email': email,
+          'password': password,
+        },
+        auth: false,
+      );
+
+      if (response.success && response.data != null) {
+        final token = response.data!['token'] as String?;
+        if (token != null) {
+          await ApiService.saveToken(token);
+        }
+
+        final userData = response.data!['user'] as Map<String, dynamic>?;
+        if (userData != null) {
+          _currentUser = Sana3iUser.fromApi(userData);
+          _controller.add(_currentUser);
+          await _saveUserLocal(_currentUser!);
+
+          debugPrint('🔐 Login success: ${_currentUser!.name}');
+          return AuthResult.success(user: _currentUser!);
+        }
+      }
+
+      return AuthResult.failure(
+        error: response.errorMessage ?? 'فشل تسجيل الدخول',
+      );
+    } catch (e) {
+      debugPrint('🔐 Login error: $e');
+      return AuthResult.failure(error: 'خطأ في الاتصال بالخادم');
+    }
+  }
+
+  // ══ إنشاء حساب ═════════════════════════════════════════════════
+
+  /// إنشاء حساب جديد
+  static Future<AuthResult> signUp({
+    required String name,
+    required String phone,
+    required String password,
+    String? email,
+    String role = kRoleClient,
+    String? governorate,
+    String? city,
+    String? businessName,
+    String? businessType,
+    String? businessCategory,
+    String? businessAddress,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'name': name,
+        'phone': phone,
+        'password': password,
+        'role': role,
+        if (email != null) 'email': email,
+        if (governorate != null) 'governorate': governorate,
+        if (city != null) 'city': city,
+        if (businessName != null) 'businessName': businessName,
+        if (businessType != null) 'businessType': businessType,
+        if (businessCategory != null) 'businessCategory': businessCategory,
+        if (businessAddress != null) 'businessAddress': businessAddress,
+      };
+
+      final response = await ApiService.post(
+        '/api/auth/register',
+        body: body,
+        auth: false,
+      );
+
+      if (response.success && response.data != null) {
+        final token = response.data!['token'] as String?;
+        if (token != null) {
+          await ApiService.saveToken(token);
+        }
+
+        final userData = response.data!['user'] as Map<String, dynamic>?;
+        if (userData != null) {
+          _currentUser = Sana3iUser.fromApi(userData);
+          _controller.add(_currentUser);
+          await _saveUserLocal(_currentUser!);
+
+          debugPrint('🔐 Signup success: ${_currentUser!.name}');
+          return AuthResult.success(user: _currentUser!);
+        }
+      }
+
+      return AuthResult.failure(
+        error: response.errorMessage ?? 'فشل إنشاء الحساب',
+      );
+    } catch (e) {
+      debugPrint('🔐 Signup error: $e');
+      return AuthResult.failure(error: 'خطأ في الاتصال بالخادم');
+    }
+  }
+
+  // ══ تسجيل الخروج ═════════════════════════════════════════════════
+
+  /// تسجيل الخروج
+  static Future<void> signOut() async {
+    try {
+      await ApiService.post('/api/auth/logout');
+    } catch (_) {}
+
+    await _clearSession();
+    debugPrint('🔐 Logged out');
+  }
+
+  // ══ تحديث بيانات المستخدم ═══════════════════════════════════════
+
+  /// تحديث بيانات المستخدم من الخادم
+  static Future<Sana3iUser?> refreshUser() async {
+    try {
+      final response = await ApiService.get('/api/auth/me');
+      if (response.success && response.data != null) {
+        final userData = response.data!['user'] as Map<String, dynamic>?;
+        if (userData != null) {
+          _currentUser = Sana3iUser.fromApi(userData);
+          _controller.add(_currentUser);
+          await _saveUserLocal(_currentUser!);
+          return _currentUser;
+        }
+      }
+    } catch (e) {
+      debugPrint('🔐 Error refreshing user: $e');
+    }
+    return null;
+  }
+
+  /// تحديث ملف المستخدم
+  static Future<AuthResult> updateProfile({
+    String? name,
+    String? email,
+    String? phone,
+    String? governorate,
+    String? city,
+    String? address,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (name != null) body['name'] = name;
+      if (email != null) body['email'] = email;
+      if (phone != null) body['phone'] = phone;
+      if (governorate != null) body['governorate'] = governorate;
+      if (city != null) body['city'] = city;
+      if (address != null) body['address'] = address;
+
+      final response = await ApiService.put('/api/user/profile', body: body);
+
+      if (response.success) {
+        await refreshUser();
+        return AuthResult.success(user: _currentUser!);
+      }
+
+      return AuthResult.failure(
+        error: response.errorMessage ?? 'فشل تحديث الملف',
+      );
+    } catch (e) {
+      return AuthResult.failure(error: 'خطأ في الاتصال بالخادم');
+    }
+  }
+
+  // ══ إعادة تعيين كلمة المرور ═════════════════════════════════════
+
+  /// إرسال رابط إعادة تعيين كلمة المرور
+  static Future<AuthResult> sendPasswordResetEmail({
+    required String email,
+  }) async {
+    try {
+      final response = await ApiService.post(
+        '/api/auth/forgot-password',
+        body: {'email': email},
+        auth: false,
+      );
+
+      if (response.success) {
+        return AuthResult.success(user: _currentUser ?? const Sana3iUser(id: '', name: '', role: kRoleClient));
+      }
+
+      return AuthResult.failure(
+        error: response.errorMessage ?? 'فشل إرسال رابط إعادة التعيين',
+      );
+    } catch (e) {
+      debugPrint('🔐 Password reset error: $e');
+      return AuthResult.failure(error: 'خطأ في الاتصال بالخادم');
+    }
+  }
+
+  /// إعادة تعيين كلمة المرور باستخدام التوكن
+  static Future<AuthResult> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await ApiService.post(
+        '/api/auth/reset-password',
+        body: {
+          'token': token,
+          'password': newPassword,
+        },
+        auth: false,
+      );
+
+      if (response.success) {
+        return AuthResult.success(user: _currentUser ?? const Sana3iUser(id: '', name: '', role: kRoleClient));
+      }
+
+      return AuthResult.failure(
+        error: response.errorMessage ?? 'فشل إعادة تعيين كلمة المرور',
+      );
+    } catch (e) {
+      debugPrint('🔐 Password reset error: $e');
+      return AuthResult.failure(error: 'خطأ في الاتصال بالخادم');
+    }
+  }
+
+  // ══ حفظ واستعادة البيانات محلياً ═════════════════════════════════
+
+  static Future<void> _saveUserLocal(Sana3iUser user) async {
+    try {
+      await _secureStorage.write(
+        key: _userKey,
+        value: jsonEncode(user.toMap()),
+      );
+    } catch (e) {
+      debugPrint('🔐 Error saving user locally: $e');
+    }
+  }
+
+  static Future<void> _loadLocalUser() async {
+    try {
+      final data = await _secureStorage.read(key: _userKey);
+      if (data != null) {
+        final map = jsonDecode(data) as Map<String, dynamic>;
+        _currentUser = Sana3iUser.fromApi(map);
+        _controller.add(_currentUser);
+      }
+    } catch (e) {
+      debugPrint('🔐 Error loading local user: $e');
+    }
+  }
+
+  static Future<void> _clearSession() async {
+    // ✅ قطع اتصال Socket.IO عند تسجيل الخروج
+    SocketService.disconnect();
+
+    _currentUser = null;
+    _controller.add(null);
+    await ApiService.clearTokens();
+    await _secureStorage.delete(key: _userKey);
+  }
+
+  // ══ تنظيف ═════════════════════════════════════════════════════
+
+  /// تحرير الموارد (عند إغلاق التطبيق)
+  static void dispose() {
+    SocketService.dispose();
+    _controller.close();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// نماذج مساعدة
+// ═══════════════════════════════════════════════════════════════════
+
+/// نتيجة عملية المصادقة
+class AuthResult {
+  final bool success;
+  final Sana3iUser? user;
+  final String? error;
+  final String? code;
+
+  const AuthResult._({
+    required this.success,
+    this.user,
+    this.error,
+    this.code,
+  });
+
+  factory AuthResult.success({required Sana3iUser user}) =>
+      AuthResult._(success: true, user: user);
+
+  factory AuthResult.failure({required String error, String? code}) =>
+      AuthResult._(success: false, error: error, code: code);
+
+  @override
+  String toString() =>
+      success ? 'AuthResult.success(${user?.name})' : 'AuthResult.failure($error)';
+}

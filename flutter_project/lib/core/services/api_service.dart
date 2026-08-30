@@ -1,0 +1,503 @@
+// ═══════════════════════════════════════════════════════════════════
+// خدمة API المركزية — بديل Firebase للتواصل مع خادم Next.js
+// الحرفي الكويتي — تحويل من Firebase إلى PostgreSQL/Prisma
+// ═══════════════════════════════════════════════════════════════════
+
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
+
+/// مهلة الاتصال الافتراضية
+const Duration _defaultTimeout = Duration(seconds: 15);
+
+/// عدد محاولات إعادة الاتصال
+const int _maxRetries = 2;
+
+/// عنوان الخادم الأساسي — يُعدّل حسب بيئة التشغيل
+class ApiConfig {
+  // للإنتاج
+  static const String productionUrl = 'https://ah-herafy2.vercel.app';
+
+  // للتصحيح المحلي — يُستبدل بـ IP الجهاز على الشبكة المحلية
+  static const String localUrl = 'http://10.0.2.2:3000'; // Android emulator
+  static const String localNetworkUrl = 'http://192.168.1.X:3000'; // جهاز حقيقي
+
+  /// الرابط الحالي حسب البيئة
+  static String get baseUrl {
+    if (_customUrl != null) return _customUrl!;
+
+    if (kIsWeb) return productionUrl;
+
+    // في وضع التطوير يمكن تفعيل الرابط المحلي
+    const bool isDev = bool.fromEnvironment('IS_DEV', defaultValue: false);
+    if (isDev) {
+      // على المحاكي: 10.0.2.2 يشير إلى localhost الجهاز المضيف
+      // على جهاز حقيقي: غيّر إلى IP الشبكة المحلية مثل 192.168.1.X
+      return localUrl;
+    }
+
+    return productionUrl;
+  }
+
+  /// تغيير الرابط يدوياً (للتطوير)
+  static void setCustomUrl(String url) {
+    _customUrl = url;
+    debugPrint('🔗 API URL set to: $url');
+  }
+
+  static String? _customUrl;
+
+  /// رابط Socket.IO — منفذ 3003
+  static String get socketUrl {
+    final base = _customUrl ?? baseUrl;
+    if (base.contains('localhost') || base.contains('10.0.2.2') || base.contains('192.168')) {
+      // بيئة تطوير محلية — Socket.IO على المنفذ 3003
+      return base.replaceFirst('3000', '3003');
+    }
+    // إنتاج — نفس الدومين مع مسار Socket.IO
+    return base;
+  }
+}
+
+/// خدمة HTTP مركزية للتواصل مع خادم Next.js
+class ApiService {
+  ApiService._();
+
+  static const _secureStorage = FlutterSecureStorage();
+  static const _tokenKey = 'auth_token';
+  static const _refreshTokenKey = 'refresh_token';
+
+  // ══ إدارة التوكن ═══════════════════════════════════════════════
+
+  /// حفظ التوكن بشكل آمن
+  static Future<void> saveToken(String token) async {
+    await _secureStorage.write(key: _tokenKey, value: token);
+  }
+
+  /// حفظ refresh token
+  static Future<void> saveRefreshToken(String token) async {
+    await _secureStorage.write(key: _refreshTokenKey, value: token);
+  }
+
+  /// جلب التوكن المحفوظ
+  static Future<String?> getToken() async {
+    return await _secureStorage.read(key: _tokenKey);
+  }
+
+  /// جلب refresh token
+  static Future<String?> getRefreshToken() async {
+    return await _secureStorage.read(key: _refreshTokenKey);
+  }
+
+  /// حذف التوكن (تسجيل الخروج)
+  static Future<void> clearTokens() async {
+    await _secureStorage.delete(key: _tokenKey);
+    await _secureStorage.delete(key: _refreshTokenKey);
+  }
+
+  /// بناء headers مع التوكن
+  static Future<Map<String, String>> _headers({bool auth = true}) async {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    if (auth) {
+      final token = await getToken();
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+    }
+
+    return headers;
+  }
+
+  /// الرابط الكامل
+  static String _url(String path) {
+    final base = ApiConfig._customUrl ?? ApiConfig.baseUrl;
+    return '$base$path';
+  }
+
+  // ══ طلبات HTTP الأساسية مع Timeout و Retry ═══════════════════
+
+  /// GET request
+  static Future<ApiResponse> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    bool auth = true,
+    Duration? timeout,
+  }) async {
+    return _withRetry(() async {
+      final uri = Uri.parse(_url(path)).replace(
+        queryParameters: queryParameters?.map(
+          (k, v) => MapEntry(k, v.toString()),
+        ),
+      );
+
+      final response = await http.get(
+        uri,
+        headers: await _headers(auth: auth),
+      ).timeout(timeout ?? _defaultTimeout);
+
+      return _handleResponse(response);
+    });
+  }
+
+  /// POST request
+  static Future<ApiResponse> post(
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+    Duration? timeout,
+  }) async {
+    return _withRetry(() async {
+      final response = await http.post(
+        Uri.parse(_url(path)),
+        headers: await _headers(auth: auth),
+        body: body != null ? jsonEncode(body) : null,
+      ).timeout(timeout ?? _defaultTimeout);
+
+      return _handleResponse(response);
+    }, retryOnPost: true);
+  }
+
+  /// PUT request
+  static Future<ApiResponse> put(
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+    Duration? timeout,
+  }) async {
+    return _withRetry(() async {
+      final response = await http.put(
+        Uri.parse(_url(path)),
+        headers: await _headers(auth: auth),
+        body: body != null ? jsonEncode(body) : null,
+      ).timeout(timeout ?? _defaultTimeout);
+
+      return _handleResponse(response);
+    }, retryOnPost: true);
+  }
+
+  /// PATCH request
+  static Future<ApiResponse> patch(
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+    Duration? timeout,
+  }) async {
+    return _withRetry(() async {
+      final response = await http.patch(
+        Uri.parse(_url(path)),
+        headers: await _headers(auth: auth),
+        body: body != null ? jsonEncode(body) : null,
+      ).timeout(timeout ?? _defaultTimeout);
+
+      return _handleResponse(response);
+    }, retryOnPost: true);
+  }
+
+  /// DELETE request
+  static Future<ApiResponse> delete(
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+    Duration? timeout,
+  }) async {
+    return _withRetry(() async {
+      final response = await http.delete(
+        Uri.parse(_url(path)),
+        headers: await _headers(auth: auth),
+        body: body != null ? jsonEncode(body) : null,
+      ).timeout(timeout ?? _defaultTimeout);
+
+      return _handleResponse(response);
+    });
+  }
+
+  /// رفع ملف مع بيانات إضافية (multipart)
+  static Future<ApiResponse> uploadFile(
+    String path, {
+    required String filePath,
+    required String fieldName,
+    Map<String, String>? fields,
+    bool auth = true,
+    Duration? timeout,
+  }) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse(_url(path)),
+      );
+
+      final headers = await _headers(auth: auth);
+      headers.remove('Content-Type'); // يُحدّد تلقائياً مع multipart
+      request.headers.addAll(headers);
+
+      request.files.add(await http.MultipartFile.fromPath(fieldName, filePath));
+
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+
+      final streamedResponse = await request.send().timeout(timeout ?? const Duration(seconds: 30));
+      final response = await http.Response.fromStream(streamedResponse);
+
+      return _handleResponse(response);
+    } on SocketException {
+      return ApiResponse(
+        success: false,
+        error: 'لا يوجد اتصال بالإنترنت',
+        statusCode: 0,
+      );
+    } on TimeoutException {
+      return ApiResponse(
+        success: false,
+        error: 'انتهت مهلة الاتصال — يرجى المحاولة لاحقاً',
+        statusCode: 0,
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        error: 'حدث خطأ غير متوقع',
+        statusCode: 0,
+      );
+    }
+  }
+
+  // ══ منطق إعادة المحاولة ═══════════════════════════════════════
+
+  /// تنفيذ طلب مع إعادة المحاولة عند فشل الشبكة
+  static Future<ApiResponse> _withRetry(
+    Future<ApiResponse> Function() request, {
+    bool retryOnPost = false,
+    int maxRetries = _maxRetries,
+  }) async {
+    int attempt = 0;
+
+    while (true) {
+      try {
+        attempt++;
+        final response = await request();
+
+        // ✅ تجديد التوكن تلقائياً عند استلام 401 (محاولة واحدة فقط)
+        if (response.statusCode == 401 && attempt == 1) {
+          final refreshed = await refreshToken();
+          if (refreshed) {
+            continue; // إعادة المحاولة بالتوكن الجديد
+          } else {
+            // فشل التجديد – تسجيل خروج صامت
+            await AuthService.signOut();
+            return ApiResponse(
+              success: false,
+              error: 'انتهت صلاحية الجلسة، يرجى تسجيل الدخول',
+              statusCode: 401,
+            );
+          }
+        }
+
+        return response;
+      } on SocketException {
+        if (attempt >= maxRetries) {
+          return ApiResponse(success: false, error: 'لا يوجد اتصال بالإنترنت', statusCode: 0);
+        }
+        await Future.delayed(Duration(seconds: attempt * 2));
+      } on TimeoutException {
+        if (attempt >= maxRetries) {
+          return ApiResponse(success: false, error: 'انتهت مهلة الاتصال', statusCode: 0);
+        }
+        await Future.delayed(Duration(seconds: attempt * 2));
+      } catch (e) {
+        return ApiResponse(success: false, error: 'حدث خطأ غير متوقع', statusCode: 0);
+      }
+    }
+  }
+    int attempt = 0;
+
+    while (true) {
+      try {
+        attempt++;
+        return await request();
+      } on SocketException {
+        if (attempt >= maxRetries) {
+          return ApiResponse(
+            success: false,
+            error: 'لا يوجد اتصال بالإنترنت',
+            statusCode: 0,
+          );
+        }
+        // انتظار تصاعدي قبل إعادة المحاولة
+        await Future.delayed(Duration(seconds: attempt * 2));
+      } on TimeoutException {
+        if (attempt >= maxRetries) {
+          return ApiResponse(
+            success: false,
+            error: 'انتهت مهلة الاتصال — يرجى المحاولة لاحقاً',
+            statusCode: 0,
+          );
+        }
+        await Future.delayed(Duration(seconds: attempt * 2));
+      } on FormatException {
+        // لا نعيد المحاولة لأخطاء التحليل
+        return ApiResponse(
+          success: false,
+          error: 'خطأ في تحليل الاستجابة من الخادم',
+          statusCode: 0,
+        );
+      } catch (e) {
+        if (attempt >= maxRetries) {
+          return ApiResponse(
+            success: false,
+            error: 'حدث خطأ غير متوقع',
+            statusCode: 0,
+          );
+        }
+        await Future.delayed(Duration(seconds: attempt * 2));
+      }
+    }
+  }
+
+  // ══ معالجة الاستجابة ═══════════════════════════════════════════
+
+  ApiResponse _handleResponse(http.Response response) {
+    final statusCode = response.statusCode;
+
+    // ✅ التحقق من نوع المحتوى أولاً — منع FormatException
+    final contentType = response.headers['content-type'] ?? '';
+
+    if (!contentType.contains('application/json')) {
+      // الخادم أرجع HTML أو محتوى غير JSON — رسالة واضحة للمستخدم
+      debugPrint('⚠️ Non-JSON response: $contentType (status: $statusCode)');
+      debugPrint('⚠️ Response body preview: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
+
+      if (statusCode == 404) {
+        return ApiResponse(
+          success: false,
+          error: 'الصفحة المطلوبة غير موجودة',
+          statusCode: statusCode,
+        );
+      }
+
+      if (statusCode >= 500) {
+        return ApiResponse(
+          success: false,
+          error: 'خطأ في الخادم — يرجى المحاولة لاحقاً',
+          statusCode: statusCode,
+        );
+      }
+
+      return ApiResponse(
+        success: false,
+        error: 'خطأ في الاتصال بالخادم — يرجى المحاولة لاحقاً',
+        statusCode: statusCode,
+      );
+    }
+
+    try {
+      final data = jsonDecode(response.body);
+
+      if (statusCode >= 200 && statusCode < 300) {
+        return ApiResponse(
+          success: true,
+          data: data is Map<String, dynamic> ? data : {'data': data},
+          statusCode: statusCode,
+        );
+      }
+
+      // خطأ مصادقة — حذف التوكن
+      if (statusCode == 401) {
+        clearTokens();
+      }
+
+      final errorMsg = data is Map
+          ? (data['error'] ?? data['message'] ?? 'حدث خطأ').toString()
+          : 'حدث خطأ غير معروف';
+
+      return ApiResponse(
+        success: false,
+        error: errorMsg,
+        statusCode: statusCode,
+        data: data is Map<String, dynamic> ? data : null,
+      );
+    } catch (e) {
+      debugPrint('⚠️ JSON decode error: $e');
+      return ApiResponse(
+        success: false,
+        error: 'خطأ في الاتصال بالخادم — يرجى المحاولة لاحقاً',
+        statusCode: statusCode,
+      );
+    }
+  }
+
+  // ══ اختصارات للواجهات الشائعة ═════════════════════════════════
+
+  /// التحقق من حالة الخادم
+  Future<bool> healthCheck() async {
+    final res = await get('/api/health', auth: false);
+    return res.success;
+  }
+
+  /// تجديد التوكن باستخدام Refresh Token
+  Future<bool> refreshToken() async {
+    try {
+      final refresh = await getRefreshToken();
+      if (refresh == null) return false;
+
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/api/auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refresh}),
+      ).timeout(_defaultTimeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final newToken = data['token'] as String?;
+        final newRefresh = data['refreshToken'] as String?;
+        if (newToken != null) {
+          await saveToken(newToken);
+          if (newRefresh != null) {
+            await saveRefreshToken(newRefresh);
+          }
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Token refresh failed: $e');
+      return false;
+    }
+  }
+}
+
+/// نموذج الاستجابة الموحد
+class ApiResponse {
+  final bool success;
+  final Map<String, dynamic>? data;
+  final String? error;
+  final int statusCode;
+
+  const ApiResponse({
+    required this.success,
+    this.data,
+    this.error,
+    required this.statusCode,
+  });
+
+  /// جلب قيمة من data بمسار محدد
+  dynamic operator [](String key) => data?[key];
+
+  /// جلب قائمة من data
+  List<dynamic> get list => data != null ? (data!['data'] as List<dynamic>? ?? []) : [];
+
+  /// هل الاستجابة ناجحة
+  bool get isOk => success;
+
+  /// رسالة الخطأ
+  String get errorMessage => error ?? 'حدث خطأ غير معروف';
+
+  @override
+  String toString() => 'ApiResponse(success: $success, status: $statusCode, error: $error)';
+}

@@ -365,7 +365,7 @@ export default function ShopLayout({
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">{t('loading')}</p>
+        <p className="text-gray-700">{t('loading')}</p>
       </div>
     )
   }
@@ -394,7 +394,7 @@ export default function ShopLayout({
               <Store className="h-6 w-6 text-emerald-600" />
               <div>
                 <span>{t('app_name')}</span>
-                <p className="text-xs text-gray-400 font-normal">{t('app_subtitle')}</p>
+                <p className="text-xs text-gray-600 font-normal">{t('app_subtitle')}</p>
               </div>
             </Link>
           </div>
@@ -436,7 +436,7 @@ export default function ShopLayout({
                       w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
                       ${hasActive
                         ? 'text-emerald-700 font-medium bg-emerald-50/50'
-                        : 'text-gray-500 hover:bg-gray-50'
+                        : 'text-gray-700 hover:bg-gray-50'
                       }
                     `}
                   >
@@ -461,7 +461,7 @@ export default function ShopLayout({
                               flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition
                               ${isActive(item.href)
                                 ? 'bg-emerald-50 text-emerald-700 font-medium'
-                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-700'
                               }
                             `}
                           >
@@ -498,7 +498,7 @@ export default function ShopLayout({
               <button className="md:hidden text-gray-600" onClick={() => setSidebarOpen(true)}>
                 <Menu className="h-5 w-5" />
               </button>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-700">
                 {t('welcome')}, <span className="font-medium text-gray-900">{user.name}</span>
               </p>
               {/* Role Badge */}
@@ -511,7 +511,7 @@ export default function ShopLayout({
             </div>
             <div className="flex items-center gap-2">
               {businessRole && businessRole !== 'owner' && (
-                <div className="flex items-center gap-1 text-xs text-gray-400">
+                <div className="flex items-center gap-1 text-xs text-gray-600">
                   <Shield className="h-3.5 w-3.5" />
                   <span>{t('limited_permissions')}</span>
                 </div>

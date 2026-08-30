@@ -161,7 +161,7 @@ export default function AuditLogPage() {
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
               <Input
                 placeholder={t('search')}
                 value={searchQuery}
@@ -205,10 +205,10 @@ export default function AuditLogPage() {
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
-              <span className="ms-2 text-gray-500">{t('loading')}</span>
+              <span className="ms-2 text-gray-700">{t('loading')}</span>
             </div>
           ) : logs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+            <div className="flex flex-col items-center justify-center py-16 text-gray-600">
               <Shield className="h-12 w-12 mb-3" />
               <p>{t('audit_no_entries')}</p>
             </div>
@@ -242,7 +242,7 @@ export default function AuditLogPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm font-medium">{log.entity}</TableCell>
-                        <TableCell className="hidden md:table-cell text-xs text-gray-500">{log.entityId || '-'}</TableCell>
+                        <TableCell className="hidden md:table-cell text-xs text-gray-700">{log.entityId || '-'}</TableCell>
                         <TableCell className="hidden md:table-cell text-sm">{log.user?.name || '-'}</TableCell>
                         <TableCell>
                           <CollapsibleTrigger asChild>
@@ -280,10 +280,10 @@ export default function AuditLogPage() {
                                   )}
                                 </div>
                               ) : (
-                                <p className="text-xs text-gray-400">{t('audit_no_changes')}</p>
+                                <p className="text-xs text-gray-600">{t('audit_no_changes')}</p>
                               )}
                               {log.ipAddress && (
-                                <p className="text-xs text-gray-400 mt-2">IP: {log.ipAddress}</p>
+                                <p className="text-xs text-gray-600 mt-2">IP: {log.ipAddress}</p>
                               )}
                             </div>
                           </CollapsibleContent>
@@ -301,7 +301,7 @@ export default function AuditLogPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-700">
             {t('audit_page')} {page} {t('audit_of')} {totalPages}
             <span className="mx-2">|</span>
             {total} {t('audit_records')}

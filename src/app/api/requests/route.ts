@@ -3,112 +3,63 @@ import { db } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
-    const status = searchParams.get('status') || ''
-    const businessId = searchParams.get('businessId') || ''
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const skip = (page - 1) * limit
+    const { searchParams } = new URL(request.url)
+    const clientId = searchParams.get('clientId')
 
-    const where: Record<string, unknown> = {}
-
-    if (status) {
-      where.status = status
+    if (!clientId) {
+      return NextResponse.json({ error: 'معرف العميل مطلوب' }, { status: 400 })
     }
 
-    if (businessId) {
-      where.businessId = businessId
-    }
-
-    const [requests, total] = await Promise.all([
-      db.request.findMany({
-        where,
-        include: {
-          client: {
-            select: { id: true, name: true, phone: true },
-          },
-          craftsman: {
-            select: { id: true, name: true, phone: true },
-          },
-          business: {
-            select: { id: true, name: true },
-          },
-          priceOffers: {
-            select: { id: true, proposedPrice: true, status: true },
-          },
-          _count: {
-            select: { reviews: true, workPhotos: true },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      db.request.count({ where }),
-    ])
-
-    return NextResponse.json({
-      data: requests,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+    const requests = await db.request.findMany({
+      where: { clientId },
+      include: {
+        client: { select: { id: true, name: true, phone: true } },
+        craftsman: { select: { id: true, name: true, phone: true, rating: true } },
+        category: { select: { id: true, name: true, icon: true } }
       },
+      orderBy: { createdAt: 'desc' },
     })
-  } catch (error) {
-    console.error('Error fetching requests:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch requests' },
-      { status: 500 }
-    )
+
+    console.log('📦 [API] عدد الطلبات:', requests.length)
+    if (requests.length > 0) {
+      console.log('📦 [API] تفاصيل الطلب الأول:', JSON.stringify({
+        id: requests[0].id,
+        status: requests[0].status,
+        proposedPrice: requests[0].proposedPrice,
+        remainingAmount: requests[0].remainingAmount
+      }, null, 2))
+    }
+
+    return NextResponse.json({ success: true, requests })
+  } catch (error: any) {
+    console.error('❌ Fetch requests error:', error)
+    return NextResponse.json({ error: error.message || 'حدث خطأ في الخادم' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const {
-      clientId,
-      craftsmanId,
-      businessId,
-      serviceType,
-      description,
-      images,
-      governorate,
-      city,
-      address,
-      estimatedPrice,
-    } = body
-
-    if (!clientId || !serviceType) {
-      return NextResponse.json(
-        { error: 'clientId and serviceType are required' },
-        { status: 400 }
-      )
+    if (!body.clientId || !body.description || !body.address) {
+      return NextResponse.json({ error: 'بيانات ناقصة' }, { status: 400 })
     }
 
     const newRequest = await db.request.create({
       data: {
-        clientId,
-        craftsmanId,
-        businessId,
-        serviceType,
-        description,
-        images,
-        governorate,
-        city,
-        address,
-        estimatedPrice: estimatedPrice ? parseFloat(String(estimatedPrice)) : null,
+        clientId: body.clientId,
+        categoryId: body.categoryId ? parseInt(body.categoryId) : null,
+        type: body.type || 'service',
+        description: body.description,
+        address: body.address,
+        governorate: body.governorate || null,
+        city: body.city || null,
+        status: 'pending',
       },
     })
 
-    return NextResponse.json(newRequest, { status: 201 })
-  } catch (error) {
-    console.error('Error creating request:', error)
-    return NextResponse.json(
-      { error: 'Failed to create request' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: true, requestId: newRequest.id }, { status: 201 })
+  } catch (error: any) {
+    console.error('❌ خطأ في إنشاء الطلب:', error)
+    return NextResponse.json({ error: error.message || 'حدث خطأ داخلي' }, { status: 500 })
   }
 }

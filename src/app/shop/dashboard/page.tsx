@@ -261,12 +261,12 @@ export default function ShopDashboard() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             {[
-              { href: '/shop/invoices', icon: '📄', label: t('dashboard_new_invoice'), desc: t('dashboard_new_invoice_desc') },
-              { href: '/shop/bonds', icon: '📑', label: t('dashboard_new_bond'), desc: t('dashboard_new_bond_desc') },
-              { href: '/shop/products', icon: '📦', label: t('dashboard_add_product'), desc: t('dashboard_add_product_desc') },
-              { href: '/shop/clients', icon: '👥', label: t('dashboard_add_client'), desc: t('dashboard_add_client_desc') },
-              { href: '/shop/accounting', icon: '📊', label: t('dashboard_accounting'), desc: t('dashboard_accounting_desc') },
-              { href: '/shop/offers', icon: '🏷️', label: t('dashboard_new_offer'), desc: t('dashboard_new_offer_desc') },
+              { href: '/store/invoices', icon: '📄', label: t('dashboard_new_invoice'), desc: t('dashboard_new_invoice_desc') },
+              { href: '/store/bonds', icon: '📑', label: t('dashboard_new_bond'), desc: t('dashboard_new_bond_desc') },
+              { href: '/store/products', icon: '📦', label: t('dashboard_add_product'), desc: t('dashboard_add_product_desc') },
+              { href: '/store/clients', icon: '👥', label: t('dashboard_add_client'), desc: t('dashboard_add_client_desc') },
+              { href: '/store/accounting', icon: '📊', label: t('dashboard_accounting'), desc: t('dashboard_accounting_desc') },
+              { href: '/store/offers', icon: '🏷️', label: t('dashboard_new_offer'), desc: t('dashboard_new_offer_desc') },
             ].map((action) => (
               <Link
                 key={action.href + action.label}

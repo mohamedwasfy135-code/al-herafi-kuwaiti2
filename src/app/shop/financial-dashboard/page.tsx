@@ -264,7 +264,7 @@ export default function FinancialDashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]" dir={dir}>
         <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-        <span className="ms-3 text-gray-500">{t('loading')}</span>
+        <span className="ms-3 text-gray-700">{t('loading')}</span>
       </div>
     )
   }
@@ -407,7 +407,7 @@ export default function FinancialDashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex items-center justify-center h-full text-gray-400">
+                <div className="flex items-center justify-center h-full text-gray-600">
                   {t('no_data')}
                 </div>
               )}
@@ -436,13 +436,13 @@ export default function FinancialDashboardPage() {
                     </div>
                     <div className="text-end">
                       <p className="text-sm font-bold text-emerald-600">{formatNumber(product.revenue)}</p>
-                      <p className="text-xs text-gray-400">{product.quantity} {t('quantity')}</p>
+                      <p className="text-xs text-gray-600">{product.quantity} {t('quantity')}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 text-center py-8">{t('no_data')}</p>
+              <p className="text-sm text-gray-600 text-center py-8">{t('no_data')}</p>
             )}
           </CardContent>
         </Card>
@@ -465,13 +465,13 @@ export default function FinancialDashboardPage() {
                     </div>
                     <div className="text-end">
                       <p className="text-sm font-bold text-emerald-600">{formatNumber(client.total)}</p>
-                      <p className="text-xs text-gray-400">{client.invoices} {t('items')}</p>
+                      <p className="text-xs text-gray-600">{client.invoices} {t('items')}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 text-center py-8">{t('no_data')}</p>
+              <p className="text-sm text-gray-600 text-center py-8">{t('no_data')}</p>
             )}
           </CardContent>
         </Card>
@@ -489,11 +489,11 @@ export default function FinancialDashboardPage() {
               </p>
               <div className="ps-4 space-y-1 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t('finance_sales')}</span>
+                  <span className="text-gray-700">{t('finance_sales')}</span>
                   <span className="font-medium">{formatNumber(cashFlow.inflows.sales)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t('finance_receipt_bonds')}</span>
+                  <span className="text-gray-700">{t('finance_receipt_bonds')}</span>
                   <span className="font-medium">{formatNumber(cashFlow.inflows.receiptBonds)}</span>
                 </div>
               </div>
@@ -505,19 +505,19 @@ export default function FinancialDashboardPage() {
               </p>
               <div className="ps-4 space-y-1 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t('finance_purchases')}</span>
+                  <span className="text-gray-700">{t('finance_purchases')}</span>
                   <span className="font-medium">{formatNumber(cashFlow.outflows.purchases)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t('finance_payment_bonds')}</span>
+                  <span className="text-gray-700">{t('finance_payment_bonds')}</span>
                   <span className="font-medium">{formatNumber(cashFlow.outflows.paymentBonds)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t('finance_salaries')}</span>
+                  <span className="text-gray-700">{t('finance_salaries')}</span>
                   <span className="font-medium">{formatNumber(cashFlow.outflows.salaries)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">{t('finance_rents')}</span>
+                  <span className="text-gray-700">{t('finance_rents')}</span>
                   <span className="font-medium">{formatNumber(cashFlow.outflows.rents)}</span>
                 </div>
               </div>
@@ -557,16 +557,16 @@ export default function FinancialDashboardPage() {
                 </span>
               </div>
             </div>
-            <p className="text-sm text-gray-500 mt-2 text-center">
+            <p className="text-sm text-gray-700 mt-2 text-center">
               {profitMargin >= 0 ? t('finance_positive_profit') : t('finance_loss')}
             </p>
             <div className="mt-3 w-full space-y-1 text-xs">
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('chart_revenue')}</span>
+                <span className="text-gray-700">{t('chart_revenue')}</span>
                 <span className="font-medium">{formatNumber(totalRevenue)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">{t('chart_expenses')}</span>
+                <span className="text-gray-700">{t('chart_expenses')}</span>
                 <span className="font-medium">{formatNumber(totalExpenses)}</span>
               </div>
             </div>

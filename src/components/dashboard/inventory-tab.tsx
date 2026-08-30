@@ -1074,7 +1074,7 @@ export function InventoryTab() {
                                   ? 'border-emerald-300 text-emerald-700'
                                   : row.runningBalance < 0
                                   ? 'border-red-300 text-red-700'
-                                  : 'border-gray-300 text-gray-500'
+                                  : 'border-gray-300 text-gray-700'
                               }`}
                             >
                               {row.runningBalance}

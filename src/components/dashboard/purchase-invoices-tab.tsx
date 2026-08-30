@@ -159,7 +159,7 @@ const emptyLineItem = (): LineItem => ({
   description: '',
   quantity: '',
   unitPrice: '',
-  discount: '0',
+  discount: '',
   total: 0,
 })
 
@@ -382,7 +382,7 @@ export function PurchaseInvoicesTab() {
     unpaid: { label: t('sales_status_unpaid'), color: 'bg-red-100 text-red-700' },
     partial: { label: t('sales_status_partial'), color: 'bg-yellow-100 text-yellow-700' },
     paid: { label: t('sales_status_paid'), color: 'bg-emerald-100 text-emerald-700' },
-    cancelled: { label: t('sales_status_cancelled'), color: 'bg-gray-100 text-gray-500' },
+    cancelled: { label: t('sales_status_cancelled'), color: 'bg-gray-100 text-gray-700' },
   }), [t])
 
   // ─── Fetch Data ───────────────────────────────────────────
@@ -398,15 +398,15 @@ export function PurchaseInvoicesTab() {
       ])
       if (invRes.ok) {
         const data = await invRes.json()
-        if (data.length > 0) setInvoices(data)
+        if (Array.isArray(data) && data.length > 0) setInvoices(data)
       }
       if (supRes.ok) {
         const data = await supRes.json()
-        setSuppliers(data)
+        if (Array.isArray(data)) setSuppliers(data)
       }
       if (prodRes.ok) {
         const data = await prodRes.json()
-        setProducts(data.map((p: Record<string, unknown>) => ({
+        if (Array.isArray(data)) setProducts(data.map((p: Record<string, unknown>) => ({
           id: p.id as number,
           name: p.name as string,
           sku: (p.sku as string) || null,
@@ -450,8 +450,8 @@ export function PurchaseInvoicesTab() {
 
   const filteredInvoices =
     statusFilter === 'all'
-      ? invoices
-      : invoices.filter((i) => i.status === statusFilter)
+      ? (invoices || [])
+      : (invoices || []).filter((i) => i.status === statusFilter)
   const totalPurchases = invoices.reduce((sum, i) => sum + i.total, 0)
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0)
@@ -463,7 +463,7 @@ export function PurchaseInvoicesTab() {
 
   // ─── Supplier search ──────────────────────────────────────
 
-  const filteredSuppliers = suppliers.filter((s) =>
+  const filteredSuppliers = (suppliers || []).filter((s) =>
     s.name.includes(supplierSearch) ||
     (s.phone && s.phone.includes(supplierSearch))
   )
@@ -553,7 +553,7 @@ export function PurchaseInvoicesTab() {
     setHighlightedProductIdx(-1)
   }
 
-  const filteredProducts = products.filter(
+  const filteredProducts = (products || []).filter(
     (p) =>
       p.name.includes(productSearchTerm) ||
       (p.sku && p.sku.includes(productSearchTerm))

@@ -124,7 +124,7 @@ export function InvoicesTab() {
     unpaid: { label: t('sales_status_unpaid'), color: 'bg-red-100 text-red-700' },
     partial: { label: t('sales_status_partial'), color: 'bg-yellow-100 text-yellow-700' },
     paid: { label: t('sales_status_paid'), color: 'bg-green-100 text-green-700' },
-    cancelled: { label: t('sales_status_cancelled'), color: 'bg-gray-100 text-gray-500' },
+    cancelled: { label: t('sales_status_cancelled'), color: 'bg-gray-100 text-gray-700' },
   }), [t])
 
   useEffect(() => {
@@ -137,11 +137,11 @@ export function InvoicesTab() {
         ])
         if (salesRes.ok) {
           const data = await salesRes.json()
-          if (data.length > 0) setSalesInvoices(data)
+          if (Array.isArray(data) && data.length > 0) setSalesInvoices(data)
         }
         if (purchaseRes.ok) {
           const data = await purchaseRes.json()
-          if (data.length > 0) setPurchaseInvoices(data)
+          if (Array.isArray(data) && data.length > 0) setPurchaseInvoices(data)
         }
       } catch {
         // Keep sample data
@@ -239,8 +239,8 @@ export function InvoicesTab() {
     }
   }
 
-  const filteredSales = statusFilter === 'all' ? salesInvoices : salesInvoices.filter((i) => i.status === statusFilter)
-  const filteredPurchase = statusFilter === 'all' ? purchaseInvoices : purchaseInvoices.filter((i) => i.status === statusFilter)
+  const filteredSales = statusFilter === 'all' ? (salesInvoices || []) : (salesInvoices || []).filter((i) => i.status === statusFilter)
+  const filteredPurchase = statusFilter === 'all' ? (purchaseInvoices || []) : (purchaseInvoices || []).filter((i) => i.status === statusFilter)
 
   const totalSales = salesInvoices.reduce((sum, i) => sum + i.total, 0)
   const totalPurchases = purchaseInvoices.reduce((sum, i) => sum + i.total, 0)

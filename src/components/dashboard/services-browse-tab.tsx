@@ -164,7 +164,7 @@ export function ServicesBrowseTab() {
       ) : services.length === 0 ? (
         <div className="flex min-h-[200px] flex-col items-center justify-center text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-            <Wrench className="h-8 w-8 text-gray-400" />
+            <Wrench className="h-8 w-8 text-gray-600" />
           </div>
           <h3 className="text-lg font-medium text-gray-600">لا توجد خدمات</h3>
           <p className="text-sm text-muted-foreground">جرب البحث بكلمات مختلفة أو غير التصنيف</p>

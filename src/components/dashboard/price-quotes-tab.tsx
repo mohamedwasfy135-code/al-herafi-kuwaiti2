@@ -144,7 +144,7 @@ const emptyLineItem = (): LineItem => ({
   description: '',
   quantity: '',
   unitPrice: '',
-  discount: '0',
+  discount: '',
   total: 0,
 })
 
@@ -219,15 +219,15 @@ export function PriceQuotesTab() {
       ])
       if (qRes.ok) {
         const data = await qRes.json()
-        if (data.length > 0) setQuotes(data)
+        if (Array.isArray(data) && data.length > 0) setQuotes(data)
       }
       if (cliRes.ok) {
         const data = await cliRes.json()
-        setClients(data)
+        if (Array.isArray(data)) setClients(data)
       }
       if (prodRes.ok) {
         const data = await prodRes.json()
-        setProducts(data.map((p: Record<string, unknown>) => ({
+        if (Array.isArray(data)) setProducts(data.map((p: Record<string, unknown>) => ({
           id: p.id as number,
           name: p.name as string,
           sku: (p.sku as string) || null,
@@ -270,8 +270,8 @@ export function PriceQuotesTab() {
 
   const filteredQuotes =
     statusFilter === 'all'
-      ? quotes
-      : quotes.filter((q) => q.status === statusFilter)
+    ? (quotes || [])
+    : (quotes || []).filter((q) => q.status === statusFilter)
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0)
   const totalDiscount = lineItems.reduce(
@@ -282,7 +282,7 @@ export function PriceQuotesTab() {
 
   // ─── Client search ────────────────────────────────────────
 
-  const filteredClients = clients.filter((c) =>
+    const filteredClients = (clients || []).filter((c) =>
     c.name.includes(clientSearch) ||
     (c.phone && c.phone.includes(clientSearch))
   )
@@ -356,7 +356,7 @@ export function PriceQuotesTab() {
     setHighlightedProductIdx(-1)
   }
 
-  const filteredProducts = products.filter(
+    const filteredProducts = (products || []).filter(
     (p) =>
       p.name.includes(productSearchTerm) ||
       (p.sku && p.sku.includes(productSearchTerm))
@@ -706,7 +706,7 @@ export function PriceQuotesTab() {
                 <p className="text-sm text-muted-foreground">{quote.quoteNumber}</p>
                 <p className="text-sm text-muted-foreground">{new Date(quote.createdAt).toLocaleDateString(locale)}</p>
                 {quote.validUntil && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                     <Calendar className="h-3.5 w-3.5" />
                     {t('quote_valid_until')}: {new Date(quote.validUntil).toLocaleDateString(locale)}
                   </p>
@@ -779,8 +779,14 @@ export function PriceQuotesTab() {
                 </div>
               </div>
             </div>
+           {/* Quote distinction banner */}
+            <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 text-center">
+              <p className="text-sm font-medium text-teal-700">
+                هذا عرض سعر وليس فاتورة - الأسعار قابلة للتغيير
+              </p>
+            </div>
 
-            {/* Status */}
+            {/* Status */}   
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground">{t('invoice_status')}:</span>
               <Badge variant="secondary" className={`text-xs ${(statusMap[quote.status] || statusMap.draft).color}`}>

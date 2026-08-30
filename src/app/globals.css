@@ -1,270 +1,60 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #ffffff;
+  --foreground: #1d1d1f;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro Arabic", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* إلغاء التنعيم العدوائي الذي يجعل الخطوط العربية رفيعة جداً على الخلفيات الداكنة */
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+[dir="rtl"] {
+  direction: rtl;
 }
 
-/* ─── Print Styles ─────────────────────────────────────────────── */
-@media print {
-  /* Hide everything by default */
-  body > *:not(.print-area):not(script):not(style) {
-    display: none !important;
-  }
+/* تحسين التباين للعناوين */
+h1, h2, h3, h4, h5, h6 {
+  color: #1d1d1f;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
 
-  body * {
-    visibility: hidden !important;
-  }
+/* ضمان وضوح النصوص في القوائم والخلفيات الداكنة */
+.bg-gray-900 button, 
+.bg-gray-900 span, 
+.bg-gray-900 h2,
+aside button,
+nav button {
+  color: #ffffff !important;
+  font-weight: 600;
+}
 
-  /* Show only the print area and its children */
-  .print-area,
-  .print-area * {
-    visibility: visible !important;
-  }
+.bg-gray-900 button:hover {
+  color: #ffffff !important;
+}
 
-  /* Position the print area to fill the page */
-  .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 15mm;
-    margin: 0;
-  }
+/* تحسين تباين النصوص في البطاقات البيضاء */
+.bg-white p, .bg-white span, .bg-white div, .bg-white td {
+  color: #333336;
+}
 
-  /* Hide no-print elements explicitly - these won't show in print at all */
-  .no-print,
-  .no-print * {
-    display: none !important;
-    visibility: hidden !important;
-  }
+.bg-white p.font-bold, .bg-white p.text-2xl, .bg-white th {
+  color: #1d1d1f;
+  font-weight: 600;
+}
 
-  /* Remove backgrounds and shadows for cleaner print */
-  .print-area {
-    background: white !important;
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-  }
+/* تحسين التباين للروابط */
+a {
+  color: #0071e3;
+  text-decoration: none;
+}
 
-  /* Remove scroll and fix layout */
-  html, body {
-    height: auto;
-    overflow: visible;
-    background: white !important;
-  }
-
-  /* Hide sidebar, header, footer, shortcut bar from shop layout */
-  aside,
-  aside *,
-  header,
-  header *,
-  footer,
-  footer *,
-  .sidebar-overlay,
-  .sidebar-overlay *,
-  nav,
-  nav *,
-  [data-slot="sidebar"],
-  [data-slot="sidebar"] *,
-  .sidebar-container,
-  .sidebar-container *,
-  .shortcut-bar,
-  .shortcut-bar * {
-    display: none !important;
-    visibility: hidden !important;
-  }
-
-  /* Hide radix UI portal overlays (dialogs, popovers, alerts) */
-  [data-radix-popper-content-wrapper],
-  [data-radix-overlay],
-  [data-state="open"][role="dialog"],
-  [role="dialog"] {
-    display: none !important;
-  }
-
-  /* Hide the Toaster notifications */
-  [data-sonner-toaster],
-  [data-sonner-toast] {
-    display: none !important;
-  }
-
-  /* Ensure tables print properly */
-  .print-area table {
-    border-collapse: collapse;
-  }
-
-  .print-area th,
-  .print-area td {
-    border: 1px solid #e5e7eb;
-    padding: 4px 8px;
-  }
-
-  .print-area .bg-gray-50 {
-    background: #f9fafb !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .print-area .bg-emerald-100 {
-    background: #d1fae5 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .print-area .text-emerald-700,
-  .print-area .text-emerald-600 {
-    color: #047857 !important;
-  }
-
-  .print-area .text-orange-700,
-  .print-area .text-orange-600 {
-    color: #c2410c !important;
-  }
-
-  .print-area .bg-orange-100 {
-    background: #ffedd5 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .print-area .text-red-600 {
-    color: #dc2626 !important;
-  }
-
-  .print-area .text-muted-foreground {
-    color: #6b7280 !important;
-  }
-
-  /* Hide the top action bar (back, nav, print buttons) */
-  .no-print.sticky {
-    display: none !important;
-  }
-
-  /* Ensure the print-area container doesn't have extra spacing */
-  .print-area > div {
-    max-width: 100% !important;
-  }
-
-  /* Page setup */
-  @page {
-    size: A4;
-    margin: 0;
-  }
+a:hover {
+  text-decoration: underline;
 }

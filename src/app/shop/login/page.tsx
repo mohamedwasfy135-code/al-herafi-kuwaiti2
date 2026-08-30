@@ -165,7 +165,7 @@ export default function ShopLoginPage() {
         <div className="text-center mb-8">
           <div className="text-5xl mb-4">🏪</div>
           <h1 className="text-2xl font-bold text-white">{t('login_shop_login')}</h1>
-          <p className="text-gray-400 mt-2">{t('app_subtitle')}</p>
+          <p className="text-gray-600 mt-2">{t('app_subtitle')}</p>
         </div>
 
         <div className="bg-white rounded-2xl p-6">
@@ -248,7 +248,7 @@ export default function ShopLoginPage() {
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
                 loginMode === 'owner'
                   ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-gray-700 hover:text-gray-700'
               }`}
             >
               <Store className="h-4 w-4" />
@@ -260,7 +260,7 @@ export default function ShopLoginPage() {
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
                 loginMode === 'business_user'
                   ? 'bg-violet-600 text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-gray-700 hover:text-gray-700'
               }`}
             >
               <Users className="h-4 w-4" />
@@ -274,7 +274,7 @@ export default function ShopLoginPage() {
               <div>
                 <label className="text-sm font-medium mb-1 block">{t('login_phone')}</label>
                 <div className="relative">
-                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
                   <input
                     type="tel"
                     placeholder="5XXXXXXXX"
@@ -292,7 +292,7 @@ export default function ShopLoginPage() {
                 <div>
                   <label className="text-sm font-medium mb-1 block">{t('login_phone')}</label>
                   <div className="relative">
-                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
                     <input
                       type="tel"
                       placeholder="5XXXXXXXX"
@@ -306,13 +306,13 @@ export default function ShopLoginPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-xs text-gray-400">{lang === 'ar' ? 'أو' : 'or'}</span>
+                  <span className="text-xs text-gray-600">{lang === 'ar' ? 'أو' : 'or'}</span>
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">{t('login_email')}</label>
                   <div className="relative">
-                    <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
                     <input
                       type="email"
                       placeholder="email@example.com"
@@ -330,7 +330,7 @@ export default function ShopLoginPage() {
             <div>
               <label className="text-sm font-medium mb-1 block">{t('login_password')}</label>
               <div className="relative">
-                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••"
@@ -342,7 +342,7 @@ export default function ShopLoginPage() {
                 />
                 <button
                   type="button"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-600"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -364,7 +364,7 @@ export default function ShopLoginPage() {
           </form>
 
           <div className="mt-4 text-center">
-            <Link href="/" className="text-sm text-gray-500 hover:text-gray-700 transition">
+            <Link href="/" className="text-sm text-gray-700 hover:text-gray-700 transition">
             {t('login_back_home')}
             </Link>
           </div>
@@ -381,7 +381,7 @@ export default function ShopLoginPage() {
         <div className="mt-4 text-center">
           <button
             onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 transition"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border border-gray-600 text-gray-600 hover:text-white hover:border-gray-400 transition"
           >
             <Languages className="h-4 w-4" />
             {lang === 'ar' ? 'English' : 'العربية'}
@@ -391,15 +391,15 @@ export default function ShopLoginPage() {
         <div className="mt-6 grid grid-cols-3 gap-3 text-center">
           <div className="bg-gray-800 rounded-lg p-3">
             <p className="text-xl mb-1">📄</p>
-            <p className="text-xs text-gray-400">{t('nav_invoices')}</p>
+            <p className="text-xs text-gray-600">{t('nav_invoices')}</p>
           </div>
           <div className="bg-gray-800 rounded-lg p-3">
             <p className="text-xl mb-1">📑</p>
-            <p className="text-xs text-gray-400">{t('nav_bonds')}</p>
+            <p className="text-xs text-gray-600">{t('nav_bonds')}</p>
           </div>
           <div className="bg-gray-800 rounded-lg p-3">
             <p className="text-xl mb-1">📊</p>
-            <p className="text-xs text-gray-400">{t('nav_accounting')}</p>
+            <p className="text-xs text-gray-600">{t('nav_accounting')}</p>
           </div>
         </div>
       </div>

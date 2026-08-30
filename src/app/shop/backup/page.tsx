@@ -192,7 +192,7 @@ export default function BackupPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{t('backup_title')}</h1>
-          <p className="text-sm text-gray-500">{t('backup_title')}</p>
+          <p className="text-sm text-gray-700">{t('backup_title')}</p>
         </div>
       </div>
 
@@ -229,11 +229,11 @@ export default function BackupPage() {
             </div>
 
             <div className="p-4 bg-gray-50 rounded-lg space-y-2">
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-gray-700">
                 <FileJson className="h-4 w-4" />
                 <span>{t('backup_json_format')}</span>
               </div>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-600">
                 {t('backup_export_desc')}
               </p>
             </div>
@@ -278,11 +278,11 @@ export default function BackupPage() {
                 className="flex items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-amber-400 transition-colors bg-gray-50 hover:bg-amber-50"
               >
                 <div className="text-center">
-                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <Upload className="h-8 w-8 text-gray-600 mx-auto mb-2" />
                   <p className="text-sm text-gray-600">
                     {importFileName || t('backup_choose_file')}
                   </p>
-                  <p className="text-xs text-gray-400">.json</p>
+                  <p className="text-xs text-gray-600">.json</p>
                 </div>
                 <input
                   id="import-file"
@@ -301,7 +301,7 @@ export default function BackupPage() {
                   <Shield className="h-4 w-4" />
                   <span>{t('backup_import_data')}</span>
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-700">
                   {t('backup_version')}: {importFile.version} |
                   {' '}{t('backup_export_date')}: {new Date(importFile.exportedAt).toLocaleString(lang === 'ar' ? 'ar-KW' : 'en-US')}
                 </div>
@@ -309,7 +309,7 @@ export default function BackupPage() {
                   {statsEntries.map(([key, value]) => (
                     <div key={key} className="bg-white p-2 rounded border text-center">
                       <div className="text-lg font-bold text-amber-600">{value as number}</div>
-                      <div className="text-xs text-gray-500 capitalize">{key}</div>
+                      <div className="text-xs text-gray-700 capitalize">{key}</div>
                     </div>
                   ))}
                 </div>
@@ -319,7 +319,7 @@ export default function BackupPage() {
             {importProgress > 0 && (
               <div className="space-y-2">
                 <Progress value={importProgress} className="h-2" />
-                <p className="text-xs text-center text-gray-500">
+                <p className="text-xs text-center text-gray-700">
                   {t('backup_importing')} {importProgress}%
                 </p>
               </div>

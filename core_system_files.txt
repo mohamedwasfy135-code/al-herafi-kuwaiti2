@@ -1,0 +1,672 @@
+
+
+========================================
+FILE: src/lib/prisma.ts 
+========================================
+import { PrismaClient } from '@prisma/client';
+
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: ['query'],
+  });
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+export default prisma;
+
+
+========================================
+FILE: src/app/layout.tsx 
+========================================
+import type { Metadata } from 'next'
+import './globals.css'
+
+export const metadata: Metadata = {
+  title: 'الحرفي الكويتي',
+  description: 'منصة الحرفي الكويتي للخدمات والمحلات',
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ar" dir="rtl">
+      <body className="min-h-screen bg-gray-50">
+        {children}
+      </body>
+    </html>
+  )
+}
+
+
+========================================
+FILE: src/app/page.tsx 
+========================================
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import ClientHomePage, { FullHomeContent } from '@/app/client-home-content'
+
+export default function HomePage() {
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [categories, setCategories] = useState<any[]>([])
+  const [services, setServices] = useState<any[]>([])
+  const [businesses, setBusinesses] = useState<any[]>([])
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('sana3i_user')
+      if (stored) setUser(JSON.parse(stored))
+    } catch { localStorage.removeItem('sana3i_user') }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    if (!user) {
+      fetch('/api/categories').then(r => r.json()).then(d => setCategories(d.categories || d || [])).catch(() => {})
+      fetch('/api/services?limit=8').then(r => r.json()).then(d => setServices(d.services || d.data || [])).catch(() => {})
+      fetch('/api/business?limit=6').then(r => r.json()).then(d => setBusinesses(d.businesses || d.data || [])).catch(() => {})
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (!loading && user?.role === 'craftsman') {
+      router.replace('/craftsman/dashboard')
+    }
+    if (!loading && user?.role === 'admin') {
+      router.replace('/admin/dashboard')
+    }
+  }, [loading, user, router])
+
+  const handleRequestService = (serviceId?: number) => {
+    if (!user) {
+      sessionStorage.setItem('redirectAfterLogin', window.location.pathname)
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)
+    } else {
+      router.push(`/create-request${serviceId ? `?serviceId=${serviceId}` : ''}`)
+    }
+  }
+
+  if (loading || user?.role === 'craftsman' || user?.role === 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center"><p>تحميل...</p></div>
+      </div>
+    )
+  }
+
+  if (user?.role === 'client') {
+    return <ClientHomePage />
+  }
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm p-3 flex justify-between items-center">
+        <Link href="/" className="text-xl font-bold text-gray-800">الحرفي الكويتي</Link>
+        <a href="/login" className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition no-underline inline-block">تسجيل الدخول</a>
+      </header>
+      
+      <section className="bg-gradient-to-b from-blue-600 to-blue-800 text-white py-16">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h1 className="text-4xl font-bold mb-3">الحرفي الكويتي</h1>
+          <p className="text-blue-100 text-lg mb-8">اعثر على أفضل الحرفيين والمحلات في الكويت</p>
+          <div className="flex gap-2 max-w-lg mx-auto">
+            <input type="text" placeholder="ابحث عن خدمة..." className="flex-1 bg-white text-gray-900 text-lg h-12 px-4 rounded-lg outline-none" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&searchQuery.trim()) router.push(`/services?search=${encodeURIComponent(searchQuery.trim())}`)}} />
+            <button className="h-12 px-6 bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded-lg transition" onClick={()=>{if(searchQuery.trim()) router.push(`/services?search=${encodeURIComponent(searchQuery.trim())}`)}}>بحث</button>
+          </div>
+        </div>
+      </section>
+
+      <FullHomeContent categories={categories} services={services} businesses={businesses} onRequestService={handleRequestService} />
+    </div>
+  )
+}
+
+
+========================================
+FILE: src/app/api/clients/route.ts 
+========================================
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { resolveBusinessId } from '@/lib/db-utils'
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const rawBusinessId = searchParams.get('businessId')
+    const search = searchParams.get('search') || ''
+
+    if (!rawBusinessId) {
+      return NextResponse.json({ error: 'businessId مطلوب' }, { status: 400 })
+    }
+
+    const businessId = await resolveBusinessId(rawBusinessId)
+    if (!businessId) {
+      return NextResponse.json({ error: 'لم يتم العثور على المحل' }, { status: 404 })
+    }
+
+    const where: Record<string, unknown> = { businessId }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { phone: { contains: search } },
+        { email: { contains: search } },
+      ]
+    }
+
+    const clients = await db.businessClient.findMany({
+      where,
+      include: {
+        user: {
+          select: { id: true, name: true, phone: true, email: true, avatarUrl: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return NextResponse.json(clients)
+  } catch (error) {
+    console.error('Error fetching clients:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch clients' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { businessId: rawBusinessId, name, phone, email, address, notes, userId } = body
+
+    if (!rawBusinessId) {
+      return NextResponse.json(
+        { error: 'businessId and name are required' },
+        { status: 400 }
+      )
+    }
+
+    const businessId = await resolveBusinessId(rawBusinessId)
+    if (!businessId) {
+      return NextResponse.json({ error: 'لم يتم العثور على المحل' }, { status: 404 })
+    }
+
+    if (!name) {
+      return NextResponse.json(
+        { error: 'businessId and name are required' },
+        { status: 400 }
+      )
+    }
+
+    const client = await db.businessClient.create({
+      data: {
+        businessId,
+        name,
+        phone,
+        email,
+        address,
+        notes,
+        userId,
+      },
+    })
+
+    return NextResponse.json(client, { status: 201 })
+  } catch (error) {
+    console.error('Error creating client:', error)
+    return NextResponse.json(
+      { error: 'Failed to create client' },
+      { status: 500 }
+    )
+  }
+}
+
+
+========================================
+FILE: src/app/api/offers/route.ts 
+========================================
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { resolveBusinessId } from '@/lib/db-utils'
+
+// GET /api/offers - جلب قائمة العروض
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const rawBusinessId = searchParams.get('businessId')
+    const isActive = searchParams.get('isActive')
+
+    if (!rawBusinessId) {
+      return NextResponse.json({ error: 'businessId مطلوب' }, { status: 400 })
+    }
+
+    const businessId = await resolveBusinessId(rawBusinessId)
+    if (!businessId) {
+      return NextResponse.json({ error: 'لم يتم العثور على المحل' }, { status: 404 })
+    }
+
+    const where: Record<string, unknown> = { businessId }
+
+    if (isActive !== null && isActive !== undefined && isActive !== '') {
+      where.isActive = isActive === 'true'
+    }
+
+    const offers = await db.offer.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return NextResponse.json(offers)
+  } catch (error) {
+    console.error('Error fetching offers:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch offers' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/offers - إنشاء عرض جديد
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const {
+      businessId: rawBusinessId,
+      title,
+      description,
+      discountPercentage,
+      originalPrice,
+      offerPrice,
+      startDate,
+      endDate,
+      productId,
+      serviceId,
+      images,
+      isActive,
+    } = body
+
+    if (!rawBusinessId) {
+      return NextResponse.json(
+        { error: 'businessId و عنوان العرض مطلوبان' },
+        { status: 400 }
+      )
+    }
+
+    const businessId = await resolveBusinessId(rawBusinessId)
+    if (!businessId) {
+      return NextResponse.json({ error: 'لم يتم العثور على المحل' }, { status: 404 })
+    }
+
+    if (!title) {
+      return NextResponse.json(
+        { error: 'businessId و عنوان العرض مطلوبان' },
+        { status: 400 }
+      )
+    }
+
+    const offer = await db.offer.create({
+      data: {
+        businessId,
+        title,
+        description: description || null,
+        discountPercentage: discountPercentage ? parseFloat(String(discountPercentage)) : null,
+        originalPrice: originalPrice ? parseFloat(String(originalPrice)) : null,
+        offerPrice: offerPrice ? parseFloat(String(offerPrice)) : null,
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : null,
+        productId: productId ? parseInt(String(productId)) : null,
+        imageUrl: images || null,
+        isActive: isActive !== undefined ? isActive : true,
+      },
+    })
+
+    return NextResponse.json(offer, { status: 201 })
+  } catch (error) {
+    console.error('Error creating offer:', error)
+    return NextResponse.json(
+      { error: 'Failed to create offer' },
+      { status: 500 }
+    )
+  }
+}
+
+
+========================================
+FILE: src/app/api/products/route.ts 
+========================================
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { resolveBusinessId } from '@/lib/db-utils'
+import { logAudit } from '@/lib/audit'
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const rawBusinessId = searchParams.get('businessId')
+    const search = searchParams.get('search') || ''
+    const category = searchParams.get('category') || ''
+
+    if (!rawBusinessId) {
+      return NextResponse.json({ error: 'businessId مطلوب' }, { status: 400 })
+    }
+
+    const businessId = await resolveBusinessId(rawBusinessId)
+    if (!businessId) {
+      return NextResponse.json({ error: 'لم يتم العثور على المحل' }, { status: 404 })
+    }
+
+    const where: Record<string, unknown> = { businessId, isActive: true }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { nameEn: { contains: search } },
+        { sku: { contains: search } },
+        { barcode: { contains: search } },
+      ]
+    }
+
+    if (category) {
+      where.category = category
+    }
+
+    const products = await db.product.findMany({
+      where,
+      include: {
+        business: {
+          select: { id: true, name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return NextResponse.json(products)
+  } catch (error) {
+    console.error('Error fetching products:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch products' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const {
+      businessId: rawBusinessId,
+      name,
+      nameEn,
+      description,
+      sku,
+      barcode,
+      price,
+      costPrice,
+      discountPrice,
+      stockQuantity,
+      category,
+      unit,
+      images,
+      isFeatured,
+    } = body
+
+    if (!rawBusinessId) {
+      return NextResponse.json(
+        { error: 'businessId and name are required' },
+        { status: 400 }
+      )
+    }
+
+    const businessId = await resolveBusinessId(rawBusinessId)
+    if (!businessId) {
+      return NextResponse.json({ error: 'لم يتم العثور على المحل' }, { status: 404 })
+    }
+
+    if (!name) {
+      return NextResponse.json(
+        { error: 'businessId and name are required' },
+        { status: 400 }
+      )
+    }
+
+    const product = await db.product.create({
+      data: {
+        businessId,
+        name,
+        nameEn,
+        description,
+        sku,
+        barcode,
+        price: parseFloat(String(price || 0)),
+        costPrice: parseFloat(String(costPrice || 0)),
+        discountPrice: discountPrice ? parseFloat(String(discountPrice)) : null,
+        stockQuantity: parseInt(String(stockQuantity || 0)),
+        category,
+        unit,
+        images,
+        isFeatured: isFeatured || false,
+      },
+    })
+
+    await logAudit({
+      businessId,
+      action: 'CREATE',
+      entity: 'Product',
+      entityId: product.id,
+      changes: { after: { name: product.name, price: product.price } },
+    })
+
+    return NextResponse.json(product, { status: 201 })
+  } catch (error) {
+    console.error('Error creating product:', error)
+    return NextResponse.json(
+      { error: 'Failed to create product' },
+      { status: 500 }
+    )
+  }
+}
+
+
+========================================
+FILE: src/app/api/accounting/transactions/route.ts 
+========================================
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { resolveBusinessId } from '@/lib/db-utils'
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const rawBusinessId = searchParams.get('businessId')
+    const type = searchParams.get('type') || ''
+    const category = searchParams.get('category') || ''
+
+    if (!rawBusinessId) {
+      return NextResponse.json({ error: 'businessId مطلوب' }, { status: 400 })
+    }
+
+    const businessId = await resolveBusinessId(rawBusinessId)
+    if (!businessId) {
+      return NextResponse.json({ error: 'لم يتم العثور على المحل' }, { status: 404 })
+    }
+
+    const where: Record<string, unknown> = { businessId }
+
+    if (type) {
+      where.type = type
+    }
+
+    if (category) {
+      where.category = category
+    }
+
+    const transactions = await db.businessTransaction.findMany({
+      where,
+      include: {
+        debitAccount: {
+          select: { id: true, code: true, name: true },
+        },
+        creditAccount: {
+          select: { id: true, code: true, name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return NextResponse.json(transactions)
+  } catch (error) {
+    console.error('Error fetching transactions:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch transactions' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const {
+      businessId: rawBusinessId,
+      type,
+      amount,
+      description,
+      category,
+      referenceType,
+      referenceId,
+      debitAccountId,
+      creditAccountId,
+      transactionDate,
+      tags,
+    } = body
+
+    if (!rawBusinessId) {
+      return NextResponse.json(
+        { error: 'businessId, type, and amount are required' },
+        { status: 400 }
+      )
+    }
+
+    const businessId = await resolveBusinessId(rawBusinessId)
+    if (!businessId) {
+      return NextResponse.json({ error: 'لم يتم العثور على المحل' }, { status: 404 })
+    }
+
+    if (!type || !amount) {
+      return NextResponse.json(
+        { error: 'businessId, type, and amount are required' },
+        { status: 400 }
+      )
+    }
+
+    const transaction = await db.businessTransaction.create({
+      data: {
+        businessId,
+        type,
+        amount: parseFloat(String(amount)),
+        description,
+        category,
+        referenceType,
+        referenceId: referenceId ? parseInt(String(referenceId)) : null,
+        debitAccountId: debitAccountId ? parseInt(String(debitAccountId)) : null,
+        creditAccountId: creditAccountId ? parseInt(String(creditAccountId)) : null,
+        transactionDate: transactionDate ? new Date(transactionDate) : new Date(),
+        tags,
+      },
+    })
+
+    return NextResponse.json(transaction, { status: 201 })
+  } catch (error) {
+    console.error('Error creating transaction:', error)
+    return NextResponse.json(
+      { error: 'Failed to create transaction' },
+      { status: 500 }
+    )
+  }
+}
+
+
+========================================
+FILE: src/app/api/payments/myfatoorah/create/route.ts 
+========================================
+import { NextRequest, NextResponse } from 'next/server'
+import { Pool } from 'pg'
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+const MYFATOORAH_API = process.env.MYFATOORAH_API_URL || 'https://apitest.myfatoorah.com'
+const MYFATOORAH_TOKEN = process.env.MYFATOORAH_TOKEN || 'rLtt6JWvbUHDYhG5WQgkUg0R4Y0Ql0E9v7C2W9cZ3E8'
+
+export async function POST(request: NextRequest) {
+  try {
+    const { requestId, amount, type, customerName, customerPhone, customerEmail } = await request.json()
+    // type: 'inspection_fee' (5 KD) or 'final_payment'
+
+    if (!requestId || !amount || !type) {
+      return NextResponse.json({ error: 'بيانات ناقصة' }, { status: 400 })
+    }
+
+    // جلب بيانات العميل من الطلب إذا لم ترسل
+    let name = customerName, phone = customerPhone, email = customerEmail
+    if (!name || !phone) {
+      const reqData = await pool.query(`
+        SELECT u.name, u.phone, u.email FROM requests r
+        JOIN users u ON r.client_id = u.id
+        WHERE r.id = $1
+      `, [requestId])
+      if (reqData.rows[0]) {
+        name = name || reqData.rows[0].name
+        phone = phone || reqData.rows[0].phone
+        email = email || reqData.rows[0].email || `${phone}@temp.com`
+      }
+    }
+
+    // إنشاء فاتورة في ماي فاتوره
+    const response = await fetch(`${MYFATOORAH_API}/v2/SendPayment`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${MYFATOORAH_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        CustomerName: name,
+        CustomerMobile: phone,
+        CustomerEmail: email || `${phone}@temp.com`,
+        InvoiceValue: amount,
+        NotificationOption: 'LNK',
+        CallBackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/myfatoorah/callback`,
+        ErrorUrl: `${process.env.NEXT_PUBLIC_APP_URL}/payment-error`,
+        Language: 'ar',
+        DisplayCurrencyIso: 'KWD'
+      })
+    })
+
+    const data = await response.json()
+    if (!data.IsSuccess) {
+      return NextResponse.json({ error: data.Message || 'فشل إنشاء الدفع' }, { status: 400 })
+    }
+
+    // حفظ معاملة الدفع
+    const result = await pool.query(
+      `INSERT INTO payment_transactions (request_id, amount, type, myfatoorah_invoice_id, payment_url, status)
+       VALUES ($1, $2, $3, $4, $5, 'pending')
+       RETURNING id`,
+      [requestId, amount, type, data.Data.InvoiceId, data.Data.InvoiceURL]
+    )
+
+    return NextResponse.json({
+      success: true,
+      paymentUrl: data.Data.InvoiceURL,
+      transactionId: result.rows[0].id,
+      invoiceId: data.Data.InvoiceId
+    })
+  } catch (error: any) {
+    console.error('MyFatoorah create error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}

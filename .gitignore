@@ -57,3 +57,22 @@ server.log
 # Skills directory
 /skills/
 .env*
+
+# Project info files (sensitive)
+project-info.txt
+project_dump.txt
+*.dump
+*.sql
+
+# Logs
+dev.log
+server.log
+*.log
+/public/uploads
+.env
+.env.local
+.env
+.env.local
+node_modules/
+.next/
+flutter_project/lib/core/ai/hf_config.dart
