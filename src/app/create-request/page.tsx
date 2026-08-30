@@ -3,6 +3,16 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
+// بيانات محافظات ومدن الكويت
+const kuwaitLocations: Record<string, string[]> = {
+  'العاصمة': ['الكويت', 'الشرق', 'المطبة', 'القبلة', 'دسمان', 'بنيد القار', 'الدوحة', 'المرقاب'],
+  'حولي': ['حولي', 'السالمية', 'الجابرية', 'بيان', 'مشرف', 'رميثية', 'سلوى', 'ميدان حولي'],
+  'الفروانية': ['الفروانية', 'خيطان', 'جليب الشيوخ', 'الرقعي', 'الأندلس', 'الفردوس', 'اشبيلية', 'العارضية'],
+  'الأحمدي': ['الأحمدي', 'الفنطاس', 'الفنيطيس', 'المنقف', 'ضاحية فهد الأحمد', 'صباح السالم', 'أبو حليفة', 'الرقة', 'هدية', 'المسيلة', 'القرين', 'المهبولة', 'الظهر', 'الوفرة', 'العدان', 'فحيحيل', 'الزور', 'ميناء الأحمدي', 'صباح الأحمد', 'علي صباح السالم'],
+  'الجهراء': ['الجهراء', 'العيون', 'العبدلي', 'تيماء', 'النسيم', 'القصر', 'الصليبية', 'كبد', 'النويصيب', 'أمغرة', 'الواحة'],
+  'مبارك الكبير': ['مبارك الكبير', 'صباح السالم', 'القصور', 'المسيلة', 'الفنيطيس', 'ضاحية جابر العلي']
+};
+
 export default function CreateRequestPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -61,8 +71,18 @@ export default function CreateRequestPage() {
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="وصف الخدمة..." rows={4} required className="w-full p-3 border rounded-lg" />
           <input value={address} onChange={e => setAddress(e.target.value)} placeholder="العنوان بالتفصيل..." required className="w-full p-3 border rounded-lg" />
           <div className="grid grid-cols-2 gap-4">
-            <input value={governorate} onChange={e => setGovernorate(e.target.value)} placeholder="المحافظة" className="w-full p-3 border rounded-lg" />
-            <input value={city} onChange={e => setCity(e.target.value)} placeholder="المدينة" className="w-full p-3 border rounded-lg" />
+            <select value={governorate} onChange={e => { setGovernorate(e.target.value); setCity('') }} className="w-full p-3 border rounded-lg bg-white" required>
+              <option value="">اختر المحافظة</option>
+              {Object.keys(kuwaitLocations).map((gov) => (
+                <option key={gov} value={gov}>{gov}</option>
+              ))}
+            </select>
+            <select value={city} onChange={e => setCity(e.target.value)} className="w-full p-3 border rounded-lg bg-white disabled:bg-gray-100" disabled={!governorate} required>
+              <option value="">اختر المنطقة</option>
+              {governorate && kuwaitLocations[governorate].map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
           <button type="submit" disabled={submitting} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold disabled:bg-gray-400">
             {submitting ? 'جاري الإرسال...' : 'إرسال الطلب'}

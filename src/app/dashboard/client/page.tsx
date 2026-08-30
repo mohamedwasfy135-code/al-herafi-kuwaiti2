@@ -115,6 +115,22 @@ export default function ClientDashboard() {
     } catch (error) { setMsg('❌ حدث خطأ') }
   }
 
+
+
+
+
+
+  const getIcon = (name: string) => {
+    const map: Record<string, string> = { 
+      'wrench': '🔧', 'zap': '⚡', 'snowflake': '❄️', 'grid': '',
+      'shield': '🛡️', 'video': '📹', 'wifi': '📶', 'cpu': '💻',
+      'sparkles': '✨', 'paint-bucket': '🎨', 'truck': '🚚',
+      'tree': '', 'store': '🏪', 'hammer': '🔨', 'anvil': '️',
+      'appliance': '', 'bug': '🐛'
+    };
+    return map[name] || '🔧';
+  };
+
   const getStatusBadge = (status: string) => {
     const statuses: Record<string, { label: string; color: string }> = {
       pending: { label: 'قيد الانتظار', color: 'bg-yellow-100 text-yellow-800' },
@@ -167,7 +183,7 @@ export default function ClientDashboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                 {serviceCategories.map((cat: any) => (
                   <Link key={cat.id} href={`/create-request?categoryId=${cat.id}&type=service`} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition text-center border">
-                    <div className="text-4xl mb-3">{cat.icon || ''}</div>
+                    <div className="text-4xl mb-3">{getIcon(cat.icon)}</div>
                     <h3 className="font-bold text-gray-800 text-sm">{cat.name}</h3>
                   </Link>
                 ))}
@@ -178,7 +194,7 @@ export default function ClientDashboard() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {businessCategories.map((cat: any) => (
                   <Link key={cat.id} href={`/shops?category=${cat.id}`} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition text-center border">
-                    <div className="text-4xl mb-3">{cat.icon || ''}</div>
+                    <div className="text-4xl mb-3">{getIcon(cat.icon)}</div>
                     <h3 className="font-bold text-gray-800 text-sm">{cat.name}</h3>
                   </Link>
                 ))}
@@ -203,7 +219,7 @@ export default function ClientDashboard() {
                   <div key={req.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="text-3xl">{req.category?.icon || ''}</div>
+                        <div className="text-3xl">{getIcon(req.category?.icon)}</div>
                         <div>
                           <h3 className="font-bold text-gray-900">{req.category?.name || 'خدمة'}</h3>
                           <p className="text-sm text-gray-500">رقم الطلب: #{req.id}</p>

@@ -27,8 +27,9 @@ export async function POST(request: NextRequest) {
       CustomerName: req.client.name || 'عميل',
       CustomerMobile: req.client.phone || '00000000',
       CustomerEmail: req.client.email || 'test@test.com',
-      CallBackUrl: '',
-      ErrorUrl: '',
+      CallBackUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://ah-herafy2.vercel.app'}/api/myfatoorah-callback`,
+      ErrorUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://ah-herafy2.vercel.app'}/dashboard/client?msg=payment_failed`,
+      DisplayCurrencyIso: 'KWD',
       InvoiceItems: [{ ItemName: 'دفعة زيارة', Quantity: 1, UnitPrice: 3 }]
     });
 
