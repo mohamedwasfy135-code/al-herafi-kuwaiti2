@@ -37,7 +37,7 @@ export async function createInvoice(data: CreateInvoiceData) {
       CustomerMobile: data.CustomerMobile || '00000000',
       CustomerEmail: data.CustomerEmail || 'test@test.com',
       // ✅ استخدام رابط Vercel الحقيقي للـ Callback
-      CallBackUrl: `${APP_URL}/api/payment-callback`,
+      CallBackUrl: `${APP_URL}/api/myfatoorah-callback`,
       ErrorUrl: `${APP_URL}/payment/failed`,
       Language: "ar",
       CustomerReference: `INV-${Date.now()}`,
