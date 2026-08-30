@@ -1,4 +1,7 @@
-'use client' // ✅ مهم جداً: يجعل الصفحة تعمل فقط في المتصفح
+// ✅ هذا السطر يمنع Vercel من محاولة بناء الصفحة مسبقاً
+export const dynamic = 'force-dynamic'
+
+'use client'
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -19,7 +22,6 @@ export default function CreateRequestPage() {
   const categoryId = searchParams.get('categoryId')
   const type = searchParams.get('type') || 'service'
 
-  // ✅ التحقق من تسجيل الدخول يتم فقط في المتصفح
   useEffect(() => {
     try {
       const stored = localStorage.getItem('sana3i_user')
@@ -37,7 +39,7 @@ export default function CreateRequestPage() {
       console.error('Error parsing user:', e)
       router.push('/login') 
     } finally {
-      setLoading(false) // ✅ إنهاء التحميل بعد التحقق
+      setLoading(false)
     }
   }, [router])
 
@@ -76,19 +78,18 @@ export default function CreateRequestPage() {
       const data = await res.json()
 
       if (res.ok && data.success) {
-        alert('✅ تم إنشاء الطلب بنجاح! سيتم البحث عن حرفي مناسب.')
+        alert('✅ تم إنشاء الطلب بنجاح!')
         router.push(`/dashboard/client?tab=requests`)
       } else {
         setError('❌ ' + (data.error || 'فشل إنشاء الطلب'))
       }
     } catch (err) {
-      setError('❌ حدث خطأ في الاتصال بالخادم')
+      setError(' حدث خطأ في الاتصال بالخادم')
     } finally {
       setSubmitting(false)
     }
   }
 
-  // ✅ عرض حالة التحميل أثناء البناء والتحقق
   if (loading) {
     return (
       <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50">
