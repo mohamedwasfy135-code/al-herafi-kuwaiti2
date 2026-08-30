@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -13,7 +13,7 @@ model User {
   email     String   @unique
   phone     String?
   password  String
-  role      String   @default("client") // client, craftsman, admin
+  role      String   @default("client")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
@@ -56,11 +56,11 @@ model Request {
 model PaymentTransaction {
   id          Int      @id @default(autoincrement())
   paymentId   String
-  invoiceId   String?  // ✅ الحقل الجديد المضاف
+  invoiceId   String?  // ✅ الحقل الجديد
   requestId   Int
-  type        String   // visit_fee, final_payment
+  type        String
   amount      Float
-  status      String   @default("pending") // pending, paid, failed
+  status      String   @default("pending")
   paymentUrl  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
