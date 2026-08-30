@@ -1,4 +1,5 @@
-'use client'
+'use client' // ✅ مهم جداً: يجعل الصفحة تعمل فقط في المتصفح
+
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
@@ -18,6 +19,7 @@ export default function CreateRequestPage() {
   const categoryId = searchParams.get('categoryId')
   const type = searchParams.get('type') || 'service'
 
+  // ✅ التحقق من تسجيل الدخول يتم فقط في المتصفح
   useEffect(() => {
     try {
       const stored = localStorage.getItem('sana3i_user')
@@ -31,10 +33,12 @@ export default function CreateRequestPage() {
       } else { 
         router.push('/login') 
       }
-    } catch { 
+    } catch (e) { 
+      console.error('Error parsing user:', e)
       router.push('/login') 
+    } finally {
+      setLoading(false) // ✅ إنهاء التحميل بعد التحقق
     }
-    setLoading(false)
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,8 +88,16 @@ export default function CreateRequestPage() {
     }
   }
 
+  // ✅ عرض حالة التحميل أثناء البناء والتحقق
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>
+    return (
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">جاري التحميل...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
