@@ -1,5 +1,8 @@
 'use client'
 
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import * as XLSX from 'xlsx';
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/hooks/useLanguage'
@@ -27,6 +30,9 @@ export default function AdminDashboard() {
   const [pendingRefunds, setPendingRefunds] = useState<any[]>([])
   const [interventionRequests, setInterventionRequests] = useState<any[]>([])
   const [subSettings, setSubSettings] = useState<any>(null)
+  const [reportData, setReportData] = useState<any>(null)
+  const [reportDays, setReportDays] = useState(30)
+  const [loadingReport, setLoadingReport] = useState(false)
   const [newSubFee, setNewSubFee] = useState('')
   const [updatingFee, setUpdatingFee] = useState(false)
 
@@ -152,6 +158,42 @@ export default function AdminDashboard() {
       setTimeout(() => setMsg(''), 3000)
     } catch (err) { console.error(err) }
   }
+
+    const loadReportData = async (days: number = 30) => {
+    setLoadingReport(true)
+    try {
+      const res = await fetch(`/api/admin/reports?days=${days}`)
+      if (res.ok) {
+        const data = await res.json()
+        setReportData(data.data)
+      }
+    } catch (error) {
+      console.error('Error loading report:', error)
+    } finally {
+      setLoadingReport(false)
+    }
+  }
+
+  const exportToExcel = () => {
+    if (!reportData) return
+    const ws = XLSX.utils.json_to_sheet([
+      { metric: 'إجمالي إيرادات المنصة', value: reportData.financials.totalRevenue },
+      { metric: 'أرباح المنصة من الطلبات', value: reportData.financials.platformFees },
+      { metric: 'إيرادات الاشتراكات', value: reportData.financials.subscriptionRevenue },
+      { metric: 'مستحقات الحرفيين', value: reportData.financials.craftsmanEarnings },
+      { metric: 'عدد الحرفيين النشطين', value: reportData.users.activeCraftsmen },
+      { metric: 'عدد العملاء', value: reportData.users.totalClients }
+    ])
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "التقارير المالية")
+    XLSX.writeFile(wb, `تقرير_المنصة_${new Date().toISOString().split('T')[0]}.xlsx`)
+  }
+
+  useEffect(() => {
+    if (tab === 'reports') {
+      loadReportData(reportDays)
+    }
+  }, [tab, reportDays])
 
   const handleUpdateSubFee = async () => {
     if (!newSubFee || parseFloat(newSubFee) <= 0) {
@@ -653,8 +695,128 @@ export default function AdminDashboard() {
 
           {/* تقارير ذكية */}
           {tab === 'reports' && (
-            <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200 text-center">
-              <p className="text-gray-600 font-bold text-lg">{t('admin.reports')} - {isRTL ? 'قيد التطوير' : 'Coming Soon'}</p>
+            <div>
+              <div className="flex justify-between items-center mb-8">
+                <h1 className="text-3xl font-bold text-gray-900">التقارير الذكية</h1>
+                <div className="flex gap-3">
+                  <select 
+                    value={reportDays} 
+                    onChange={(e) => setReportDays(Number(e.target.value))}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    <option value={7}>آخر 7 أيام</option>
+                    <option value={30}>آخر 30 يوم</option>
+                    <option value={90}>آخر 3 أشهر</option>
+                    <option value={365}>آخر سنة</option>
+                  </select>
+                  <button 
+                    onClick={exportToExcel}
+                    disabled={!reportData}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold transition flex items-center gap-2 disabled:opacity-50"
+                  >
+                    📊 تصدير Excel
+                  </button>
+                </div>
+              </div>
+
+              {loadingReport ? (
+                <div className="text-center py-20 text-gray-500">جاري تحميل البيانات...</div>
+              ) : reportData ? (
+                <div className="space-y-8">
+                  {/* البطاقات المالية */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-200">
+                      <p className="text-emerald-700 text-sm font-bold">إجمالي إيرادات المنصة</p>
+                      <p className="text-3xl font-bold text-emerald-900 mt-2">{reportData.financials.totalRevenue.toFixed(2)} د.ك</p>
+                    </div>
+                    <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
+                      <p className="text-blue-700 text-sm font-bold">أرباح المنصة (10%)</p>
+                      <p className="text-3xl font-bold text-blue-900 mt-2">{reportData.financials.platformFees.toFixed(2)} د.ك</p>
+                    </div>
+                    <div className="bg-purple-50 p-6 rounded-xl border border-purple-200">
+                      <p className="text-purple-700 text-sm font-bold">إيرادات الاشتراكات</p>
+                      <p className="text-3xl font-bold text-purple-900 mt-2">{reportData.financials.subscriptionRevenue.toFixed(2)} د.ك</p>
+                    </div>
+                    <div className="bg-amber-50 p-6 rounded-xl border border-amber-200">
+                      <p className="text-amber-700 text-sm font-bold">مستحقات الحرفيين (90%)</p>
+                      <p className="text-3xl font-bold text-amber-900 mt-2">{reportData.financials.craftsmanEarnings.toFixed(2)} د.ك</p>
+                    </div>
+                  </div>
+
+                  {/* الرسوم البيانية */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* أفضل الحرفيين */}
+                    <div className="bg-white p-6 rounded-xl border shadow-sm">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4">🏆 أفضل الحرفيين أداءً</h3>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={reportData.performance.topCraftsmen}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="completedRequests" fill="#3b82f6" name="الطلبات المكتملة" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* حالة الاشتراكات */}
+                    <div className="bg-white p-6 rounded-xl border shadow-sm">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4">📊 حالة اشتراكات الحرفيين</h3>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: 'نشط', value: reportData.users.activeCraftsmen, color: '#10b981' },
+                              { name: 'منتهي/غير نشط', value: reportData.users.expiredCraftsmen, color: '#ef4444' }
+                            ]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {reportData.users.activeCraftsmen > 0 || reportData.users.expiredCraftsmen > 0 ? (
+                              [0, 1].map((entry, index) => (
+                                <Cell key={`cell-\${index}`} fill={[ '#10b981', '#ef4444' ][index]} />
+                              ))
+                            ) : null}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* جدول المدن */}
+                  <div className="bg-white p-6 rounded-xl border shadow-sm">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">📍 أكثر المناطق طلباً</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-right">
+                        <thead className="bg-gray-50 text-gray-700 font-bold">
+                          <tr>
+                            <th className="p-3">المحافظة</th>
+                            <th className="p-3">المدينة</th>
+                            <th className="p-3">عدد الطلبات</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reportData.requests.byCity.map((item: any, idx: number) => (
+                            <tr key={idx} className="border-t">
+                              <td className="p-3">{item.governorate || 'غير محدد'}</td>
+                              <td className="p-3">{item.city}</td>
+                              <td className="p-3 font-bold text-blue-600">{item._count.id}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-20 text-red-500">فشل تحميل بيانات التقارير</div>
+              )}
             </div>
           )}
 
