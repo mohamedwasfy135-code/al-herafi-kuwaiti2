@@ -89,7 +89,7 @@ export default function AdminDashboard() {
       const interventionData = interventionRes?.ok ? await interventionRes.json() : { requests: [] }
       const subData = subRes?.ok ? await subRes.json() : null
 
-      setStats(statsData)
+      setStats(statsData.stats || {})
       setUsers(usersData.users || [])
       setRequests(reqData.requests || [])
       setPayouts(payoutData.payouts || [])
