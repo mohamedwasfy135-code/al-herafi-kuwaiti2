@@ -9,32 +9,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 
-    // جلب الأرباح من BusinessTransaction (إذا كان هناك نظام أعمال مرتبط)
-    // أو من الطلبات المكتملة
+    // ✅ الحالات الصحيحة الفعلية: completed أو paid (مو 'done')
     const completedRequests = await prisma.request.findMany({
       where: {
         craftsmanId: session.userId,
-        status: 'done',
+        status: { in: ['completed', 'paid'] },
       },
       select: {
         id: true,
         finalPrice: true,
         agreedPrice: true,
+        platformFee: true,
+        craftsmanEarnings: true,
         serviceType: true,
         updatedAt: true,
       },
       orderBy: { updatedAt: 'desc' },
     });
 
-    // تحويل البيانات إلى صيغة الأرباح
     const earnings = completedRequests.map(req => ({
       id: req.id,
-      amount: req.finalPrice || req.agreedPrice || 0,
+      amount: req.craftsmanEarnings || ((req.finalPrice || req.agreedPrice || 0) * 0.90),
       description: req.serviceType || 'خدمة مكتملة',
       createdAt: req.updatedAt,
     }));
 
-    return NextResponse.json({ success: true, earnings });
+    // ✅ حساب الرصيد المتاح للسحب = إجمالي الأرباح ناقص طلبات السحب (المعلقة/الموافق عليها/المكتملة)
+    const totalEarnings = earnings.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+    const payoutRequests = await prisma.payoutRequest.findMany({
+      where: {
+        craftsmanId: session.userId,
+        status: { in: ['pending', 'approved', 'completed'] },
+      },
+    });
+    const alreadyRequested = payoutRequests.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const availableBalance = Math.max(totalEarnings - alreadyRequested, 0);
+
+    return NextResponse.json({ success: true, earnings, totalEarnings, availableBalance });
   } catch (error: any) {
     console.error('GET earnings error:', error);
     return NextResponse.json({ error: 'حدث خطأ في الخادم' }, { status: 500 });

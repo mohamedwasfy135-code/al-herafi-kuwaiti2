@@ -40,6 +40,9 @@ export async function POST(request: NextRequest) {
 
     // ✅ المتبقي = التكلفة النهائية الفعلية ناقص رسوم الزيارة اللي سبق دفعها
     const visitFeeDeduction = req.visitFeePaid ? VISIT_FEE : 0;
+    // ✅ حساب نسبة المنصة (10%) وصافي ربح الحرفي (90%) بدقة
+    const platformFee = Math.round(newFinalPrice * 0.10 * 1000) / 1000;
+    const craftsmanEarnings = Math.round((newFinalPrice - platformFee) * 1000) / 1000;
     const newRemainingAmount = Math.max(newFinalPrice - visitFeeDeduction, 0);
 
     const updatedRequest = await db.request.update({
@@ -47,8 +50,10 @@ export async function POST(request: NextRequest) {
       data: {
         status: 'completed',
         finalPrice: newFinalPrice,
-        agreedPrice: newFinalPrice,       // ✅ نحدّث السعر المتفق عليه ليطابق التكلفة الفعلية
-        remainingAmount: newRemainingAmount, // ✅ هذا هو الحقل اللي يستخدمه الدفع النهائي
+        agreedPrice: newFinalPrice,
+        remainingAmount: newRemainingAmount,
+        platformFee: platformFee,
+        craftsmanEarnings: craftsmanEarnings,
         description: workNotes ? `${req.description}\n\n📝 ملاحظات الحرفي: ${workNotes}` : req.description,
         updatedAt: new Date(),
       },
@@ -58,12 +63,12 @@ export async function POST(request: NextRequest) {
       data: {
         userId: req.clientId,
         title: '✅ تم إتمام العمل',
-        body: `قام الحرفي بإتمام العمل على طلبك رقم #${requestId}. التكلفة النهائية: ${newFinalPrice} د.ك (المتبقي للدفع: ${newRemainingAmount} د.ك). يرجى الدفع لتأكيد الطلب.`,
+        body: `قام الحرفي بإتمام العمل على طلبك رقم #${requestId}. التكلفة النهائية: ${newFinalPrice} د.ك (المتبقي للدفع: ${newRemainingAmount} د.ك).`,
         type: 'work_completed',
       },
     });
 
-    console.log(`✅ [Complete Work] تم إتمام الطلب #${requestId} - التكلفة النهائية: ${newFinalPrice}, المتبقي: ${newRemainingAmount}`);
+    console.log(`✅ [Complete Work] تم إتمام الطلب #${requestId} - التكلفة: ${newFinalPrice}, نسبة المنصة: ${platformFee}, صافي الحرفي: ${craftsmanEarnings}, المتبقي: ${newRemainingAmount}`);
 
     return NextResponse.json({
       success: true,

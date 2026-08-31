@@ -22,6 +22,10 @@ export default function CraftsmanDashboard() {
   const [workNotes, setWorkNotes] = useState('')
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const [msg, setMsg] = useState('')
+  const [payoutRequests, setPayoutRequests] = useState<any[]>([])
+  const [availableBalance, setAvailableBalance] = useState(0)
+  const [payoutAmount, setPayoutAmount] = useState('')
+  const [payoutLoading, setPayoutLoading] = useState(false)
 
   useEffect(() => {
     async function checkAuth() {
@@ -57,6 +61,13 @@ export default function CraftsmanDashboard() {
       if (earningsRes.ok) {
         const earningsData = await earningsRes.json()
         setEarnings(earningsData.earnings || earningsData.data || [])
+        setAvailableBalance(earningsData.availableBalance || 0)
+      }
+
+      const payoutRes = await fetch('/api/craftsman/payout-request')
+      if (payoutRes.ok) {
+        const payoutData = await payoutRes.json()
+        setPayoutRequests(payoutData.payouts || [])
       }
 
       const docsRes = await fetch('/api/craftsman/documents')
@@ -161,6 +172,29 @@ export default function CraftsmanDashboard() {
     finally { setActionLoading(null) }
   }
 
+  const handlePayoutRequest = async () => {
+    const amt = parseFloat(payoutAmount)
+    if (!amt || amt <= 0) { setMsg('❌ أدخل مبلغاً صحيحاً'); return }
+    if (amt > availableBalance) { setMsg('❌ المبلغ أكبر من رصيدك المتاح'); return }
+    setPayoutLoading(true)
+    try {
+      const res = await fetch('/api/craftsman/payout-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amt })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setMsg('✅ تم إرسال طلب السحب، بانتظار موافقة الإدارة')
+        setPayoutAmount('')
+        loadAllData()
+      } else {
+        setMsg('❌ ' + (data.error || 'فشل إرسال الطلب'))
+      }
+    } catch { setMsg('❌ حدث خطأ') }
+    finally { setPayoutLoading(false); setTimeout(() => setMsg(''), 4000) }
+  }
+
   const toggleAvailability = async () => {
     try {
       const res = await fetch('/api/craftsman/availability', {
@@ -212,6 +246,17 @@ export default function CraftsmanDashboard() {
       paid: { label: 'مدفوع', color: 'bg-purple-100 text-purple-800' },
     }
     const s = statuses[status] || { label: status, color: 'bg-gray-100 text-gray-800' }
+    return <span className={`px-3 py-1 rounded-full text-xs font-semibold ${s.color}`}>{s.label}</span>
+  }
+
+  const payoutStatusBadge = (status: string) => {
+    const map: Record<string, { label: string; color: string }> = {
+      pending: { label: 'قيد المراجعة', color: 'bg-yellow-100 text-yellow-800' },
+      approved: { label: 'تمت الموافقة', color: 'bg-blue-100 text-blue-800' },
+      completed: { label: 'تم التحويل', color: 'bg-green-100 text-green-800' },
+      rejected: { label: 'مرفوض', color: 'bg-red-100 text-red-800' },
+    }
+    const s = map[status] || { label: status, color: 'bg-gray-100 text-gray-800' }
     return <span className={`px-3 py-1 rounded-full text-xs font-semibold ${s.color}`}>{s.label}</span>
   }
 
@@ -452,7 +497,61 @@ export default function CraftsmanDashboard() {
                   <p className="text-blue-700 text-sm font-bold">عدد العمليات</p>
                   <p className="text-3xl font-bold text-blue-900 mt-2">{earnings.length}</p>
                 </div>
+                <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
+                  <p className="text-purple-700 text-sm font-bold">الرصيد المتاح للسحب</p>
+                  <p className="text-3xl font-bold text-purple-900 mt-2">{availableBalance.toFixed(3)} د.ك</p>
+                </div>
               </div>
+
+              {/* طلب سحب جديد */}
+              <div className="bg-white rounded-xl shadow-sm p-6 border mb-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">طلب سحب أرباح</h2>
+                {availableBalance <= 0 ? (
+                  <p className="text-gray-500">ما عندك رصيد متاح للسحب حاليًا.</p>
+                ) : (
+                  <div className="flex gap-3 items-end flex-wrap">
+                    <div className="flex-1 min-w-[200px]">
+                      <label className="block text-sm font-bold text-gray-700 mb-2">المبلغ (د.ك)</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        max={availableBalance}
+                        value={payoutAmount}
+                        onChange={(e) => setPayoutAmount(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                        placeholder={`حتى ${availableBalance.toFixed(3)} د.ك`}
+                      />
+                    </div>
+                    <button
+                      onClick={handlePayoutRequest}
+                      disabled={payoutLoading || !payoutAmount}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-bold transition disabled:opacity-50"
+                    >
+                      {payoutLoading ? 'جاري الإرسال...' : 'طلب السحب'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* سجل طلبات السحب */}
+              {payoutRequests.length > 0 && (
+                <div className="bg-white rounded-xl shadow-sm p-6 border mb-8">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">سجل طلبات السحب</h2>
+                  <div className="space-y-3">
+                    {payoutRequests.map((p: any) => (
+                      <div key={p.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-bold text-gray-900">{p.amount} د.ك</p>
+                          <p className="text-xs text-gray-500">{new Date(p.createdAt).toLocaleDateString('ar-KW')}</p>
+                        </div>
+                        {payoutStatusBadge(p.status)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="bg-white rounded-xl shadow-sm p-6 border">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">سجل الأرباح</h2>
                 {earnings.length === 0 ? (

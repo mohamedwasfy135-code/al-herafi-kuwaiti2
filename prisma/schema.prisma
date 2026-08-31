@@ -140,6 +140,8 @@ model Request {
   estimatedPrice          Float?
   agreedPrice             Float?
   finalPrice              Float?
+  platformFee             Float?
+  craftsmanEarnings       Float?
   assignmentAttempts      Int       @default(0)
   currentAssignmentId     Int?
   requiresAdminAssignment Boolean   @default(false)
