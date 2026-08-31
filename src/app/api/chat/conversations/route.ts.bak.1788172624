@@ -99,39 +99,6 @@ export async function POST(request: NextRequest) {
     }
 
     // إنشاء محادثة جديدة
-    // 🔒 تحقق أمني ومنطقي قبل إنشاء المحادثة
-    if (requestId) {
-      const request = await db.request.findUnique({
-        where: { id: requestId },
-        select: { status: true, clientId: true, craftsmanId: true }
-      });
-      if (!request || !["accepted", "in_progress"].includes(request.status)) {
-        return NextResponse.json(
-          { error: "لا يمكن بدء محادثة لهذا الطلب. تأكد من أن الطلب نشط ومقبول." },
-          { status: 400 }
-        );
-      }
-      if (request.clientId !== session.userId || request.craftsmanId !== craftsmanId) {
-        return NextResponse.json(
-          { error: "غير مصرح لك ببدء محادثة لهذا الطلب." },
-          { status: 403 }
-        );
-      }
-    } else {
-      const targetCraftsman = await db.user.findUnique({
-        where: { id: craftsmanId },
-        select: { role: true, verification_status: true, is_available: true }
-      });
-      if (!targetCraftsman || targetCraftsman.role !== "craftsman" || 
-          targetCraftsman.verification_status !== "verified" || 
-          !targetCraftsman.is_available) {
-        return NextResponse.json(
-          { error: "الحرفي المستهدف غير متاح أو غير مفعل حالياً." },
-          { status: 400 }
-        );
-      }
-    }
-
     const conversation = await db.conversation.create({
       data: {
         clientId: session.userId,

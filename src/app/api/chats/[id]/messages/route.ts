@@ -8,7 +8,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const session = await getSessionFromRequest(request);
     if (!session) return NextResponse.json({ error: 'غير مصرح', messages: [] }, { status: 401 });
 
-    const conversationId = params.id;
+    const resolvedParams = await params;
+    const conversationId = resolvedParams.id;
 
     // تحقق أمني صارم: هل المستخدم طرف في هذه المحادثة؟
     const conv = await db.conversation.findFirst({
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // POST: إرسال رسالة
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSessionFromRequest(request);
     if (!session) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
@@ -55,7 +56,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: 'الرسالة فارغة' }, { status: 400 });
     }
 
-    const conversationId = params.id;
+    const resolvedParams = await params;
+    const conversationId = resolvedParams.id;
 
     // تحقق أمني صارم
     const conv = await db.conversation.findFirst({
@@ -77,8 +79,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     // الطريقة المباشرة والأكثر موثوقية في Prisma عند وجود المعرفات
     const newMessage = await db.message.create({
       data: {
-        conversationId: conversationId,
-        senderId: session.userId,
+        conversation: { connect: { id: conversationId } },
+        sender: { connect: { id: session.userId } },
         text: content.trim().slice(0, 2000) // حماية من الرسائل الضخمة
       },
       include: { 

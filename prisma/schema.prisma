@@ -8,92 +8,90 @@ datasource db {
 }
 
 model User {
-  id                  String    @id @default(cuid())
-  name                String
-  email               String    @unique
-  password            String
-  role                String    @default("client")
-  categoryId          Int?
-  category            Category? @relation(fields: [categoryId], references: [id])
-  phone               String?
-  avatarUrl           String?
-  verification_status String    @default("pending")
-  is_available        Boolean   @default(true)
-  unavailable_until   DateTime?
-  latitude            Float?
-  longitude           Float?
-  rating              Float     @default(0)
-  total_ratings       Int       @default(0)
-  subscriptionStatus    String    @default("inactive") // active, inactive, expired
-  subscriptionExpiryDate DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
+  id                      String                   @id @default(cuid())
+  name                    String
+  email                   String                   @unique
+  password                String
+  role                    String                   @default("client")
+  categoryId              Int?
+  phone                   String?
+  avatarUrl               String?
+  verification_status     String                   @default("pending")
+  is_available            Boolean                  @default(true)
+  unavailable_until       DateTime?
+  latitude                Float?
+  longitude               Float?
+  rating                  Float                    @default(0)
+  total_ratings           Int                      @default(0)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  subscriptionExpiryDate  DateTime?
+  subscriptionStatus      String                   @default("inactive")
+  auditLogs               AuditLog[]
   ownedBusiness           Business?
-  services                Service[]                @relation("craftsmanServices")
+  businessUsers           BusinessUser[]
+  clientConversations     Conversation[]           @relation("ClientConversations")
+  craftsmanConversations  Conversation[]           @relation("CraftsmanConversations")
+  craftsmanDocuments      CraftsmanIDocument?
+  interventionRequests    InterventionRequest[]
+  sentMessages            Message[]
+  notifications           Notification[]
+  payoutRequests          PayoutRequest[]
+  offers                  PriceOffer[]
+  ratingsReceived         Rating[]                 @relation("RatingReceiver")
+  ratingsGiven            Rating[]                 @relation("RatingGiver")
   clientRequests          Request[]                @relation("clientRequests")
   craftsmanRequests       Request[]                @relation("assignedCraftsman")
-  offers                  PriceOffer[]
-  notifications           Notification[]
-  auditLogs               AuditLog[]
-  businessUsers           BusinessUser[]
+  requestAssignments      RequestAssignment[]
+  services                Service[]                @relation("craftsmanServices")
   shareholders            Shareholder[]
   shareholderTransactions ShareholderTransaction[]
-  craftsmanDocuments      CraftsmanIDocument[]
-  payoutRequests          PayoutRequest[]
-  subscriptionPayments  SubscriptionPayment[]
-  interventionRequests    InterventionRequest[]
-  ratingsGiven            Rating[]                 @relation("RatingGiver")
-  ratingsReceived         Rating[]                 @relation("RatingReceiver")
-  requestAssignments      RequestAssignment[]
-  clientConversations   Conversation[] @relation("ClientConversations")
-  craftsmanConversations Conversation[] @relation("CraftsmanConversations")
-  sentMessages           Message[]
+  subscriptionPayments    SubscriptionPayment[]
+  category                Category?                @relation(fields: [categoryId], references: [id])
 }
 
 model Business {
-  id          String   @id @default(cuid())
-  ownerId     String   @unique
-  categoryId  Int?
-  name        String
-  nameEn      String?
-  description String?
-  logoUrl     String?
-  phone       String?
-  email       String?
-  address     String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  owner                   User                     @relation(fields: [ownerId], references: [id])
-  category                Category?                @relation(fields: [categoryId], references: [id])
-  productCategories       ProductCategory[]
-  products                Product[]
-  warehouses              Warehouse[]
-  suppliers               Supplier[]
-  employees               Employee[]
-  salaries                Salary[]
-  rents                   Rent[]
+  id                      String                   @id @default(cuid())
+  ownerId                 String                   @unique
+  categoryId              Int?
+  name                    String
+  nameEn                  String?
+  description             String?
+  logoUrl                 String?
+  phone                   String?
+  email                   String?
+  address                 String?
+  isActive                Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
   accounts                Account[]
-  salesInvoices           SalesInvoice[]
-  purchaseInvoices        PurchaseInvoice[]
-  salesReturns            SalesReturn[]
-  purchaseReturns         PurchaseReturn[]
+  auditLogs               AuditLog[]
   bonds                   Bond[]
+  category                Category?                @relation(fields: [categoryId], references: [id])
+  owner                   User                     @relation(fields: [ownerId], references: [id])
+  clients                 BusinessClient[]
+  businessSummaries       BusinessSummary?
+  transactions            BusinessTransaction[]
+  businessUsers           BusinessUser[]
+  employees               Employee[]
   expenses                Expense[]
+  notificationLogs        NotificationLog[]
+  offers                  Offer[]
+  priceQuotes             PriceQuote[]
+  products                Product[]
+  productCategories       ProductCategory[]
+  productMovements        ProductMovement[]
+  purchaseInvoices        PurchaseInvoice[]
+  purchaseReturns         PurchaseReturn[]
+  rents                   Rent[]
+  salaries                Salary[]
+  salesInvoices           SalesInvoice[]
+  salesReturns            SalesReturn[]
   shareholders            Shareholder[]
   shareholderTransactions ShareholderTransaction[]
-  businessUsers           BusinessUser[]
-  businessSummaries       BusinessSummary[]
-  offers                  Offer[]
-  productMovements        ProductMovement[]
-  priceQuotes             PriceQuote[]
-  notificationLogs        NotificationLog[]
-  subscriptions           Subscription[]
-  clients                 BusinessClient[]
-  transactions            BusinessTransaction[]
-  auditLogs               AuditLog[]
+  subscriptions           Subscription?
+  suppliers               Supplier[]
+  warehouses              Warehouse[]
 }
 
 model Category {
@@ -101,77 +99,75 @@ model Category {
   name       String     @unique
   nameEn     String?
   icon       String?
-  type       String     @default("service") // ✅ تم الإضافة: service أو business
+  type       String     @default("service")
   createdAt  DateTime   @default(now())
+  businesses Business[]
+  requests   Request[]
   services   Service[]
   users      User[]
-  businesses Business[] // ✅ تم الإضافة
-  requests   Request[]
 }
 
 model Service {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   craftsmanId String
   categoryId  Int
   title       String
   description String?
-  price       Float    @default(0)
+  price       Float     @default(0)
   images      String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  craftsman User      @relation("craftsmanServices", fields: [craftsmanId], references: [id])
-  category  Category  @relation(fields: [categoryId], references: [id])
-  requests  Request[]
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  requests    Request[]
+  category    Category  @relation(fields: [categoryId], references: [id])
+  craftsman   User      @relation("craftsmanServices", fields: [craftsmanId], references: [id])
 }
 
 model Request {
-  id                      Int       @id @default(autoincrement())
-  type                    String    @default("service")
+  id                      Int                  @id @default(autoincrement())
+  status                  String               @default("pending")
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  paymentStatus           String               @default("unpaid")
+  visitFeePaid            Boolean              @default(false)
   clientId                String
-  craftsmanId             String?
-  businessId              String?
-  serviceId               Int?
-  productId               Int?
-  categoryId              Int?
-  category                Category? @relation(fields: [categoryId], references: [id])
-  serviceType             String?
-  description             String?
-  images                  String?
-  governorate             String?
-  city                    String?
   address                 String?
-  location                String?
-  estimatedPrice          Float?
   agreedPrice             Float?
-  finalPrice              Float?
-  platformFee             Float?
-  craftsmanEarnings       Float?
-  assignmentAttempts      Int       @default(0)
+  assignmentAttempts      Int                  @default(0)
+  businessId              String?
+  categoryId              Int?
+  city                    String?
+  craftsmanId             String?
   currentAssignmentId     Int?
-  requiresAdminAssignment Boolean   @default(false)
-  status                  String    @default("pending")
+  description             String?
+  estimatedPrice          Float?
+  finalPrice              Float?
+  governorate             String?
+  images                  String?
+  location                String?
+  paymentId               String?
+  paymentUrl              String?
+  productId               Int?
+  proposedPrice           Float?
+  remainingAmount         Float?
+  requiresAdminAssignment Boolean              @default(false)
+  serviceId               Int?
+  serviceType             String?
+  type                    String               @default("service")
+  visitFee                Float?
+  craftsmanEarnings       Float?
+  platformFee             Float?
   conversations           Conversation[]
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-
-  client         User                 @relation("clientRequests", fields: [clientId], references: [id])
-  craftsman      User?                @relation("assignedCraftsman", fields: [craftsmanId], references: [id])
-  service        Service?             @relation(fields: [serviceId], references: [id])
-  product        Product?             @relation(fields: [productId], references: [id])
-  priceOffers    PriceOffer[]
-  assignments    RequestAssignment[]
-  ratings        Rating[]
-  refundRequests RefundRequest[]
-  visitFee       Float?
-  visitFeePaid   Boolean              @default(false)
-  paymentUrl     String?
-  paymentId      String?
-  paymentStatus  String               @default("unpaid")
-  payments       PaymentTransaction[]
-  remainingAmount   Float?
-  proposedPrice     Float?
+  payments                PaymentTransaction[]
+  priceOffers             PriceOffer[]
+  ratings                 Rating[]
+  refundRequests          RefundRequest[]
+  category                Category?            @relation(fields: [categoryId], references: [id])
+  client                  User                 @relation("clientRequests", fields: [clientId], references: [id])
+  craftsman               User?                @relation("assignedCraftsman", fields: [craftsmanId], references: [id])
+  product                 Product?             @relation(fields: [productId], references: [id])
+  service                 Service?             @relation(fields: [serviceId], references: [id])
+  assignments             RequestAssignment[]
 }
 
 model RequestAssignment {
@@ -184,9 +180,8 @@ model RequestAssignment {
   rejectionReason String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-
-  request   Request @relation(fields: [requestId], references: [id])
-  craftsman User    @relation(fields: [craftsmanId], references: [id])
+  craftsman       User      @relation(fields: [craftsmanId], references: [id])
+  request         Request   @relation(fields: [requestId], references: [id])
 
   @@index([requestId, status])
   @@index([craftsmanId, expiresAt])
@@ -202,9 +197,8 @@ model PriceOffer {
   status            String   @default("pending")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-
-  request   Request @relation(fields: [requestId], references: [id])
-  craftsman User    @relation(fields: [craftsmanId], references: [id])
+  craftsman         User     @relation(fields: [craftsmanId], references: [id])
+  request           Request  @relation(fields: [requestId], references: [id])
 }
 
 model Rating {
@@ -217,34 +211,32 @@ model Rating {
   comment    String?
   images     String?
   createdAt  DateTime @default(now())
-
-  request Request @relation(fields: [requestId], references: [id])
-  rater   User    @relation("RatingGiver", fields: [raterId], references: [id])
-  rated   User    @relation("RatingReceiver", fields: [ratedId], references: [id])
+  rated      User     @relation("RatingReceiver", fields: [ratedId], references: [id])
+  rater      User     @relation("RatingGiver", fields: [raterId], references: [id])
+  request    Request  @relation(fields: [requestId], references: [id])
 
   @@unique([requestId, raterId])
 }
 
 model ProductCategory {
-  id         Int      @id @default(autoincrement())
+  id         Int               @id @default(autoincrement())
   businessId String
   name       String
   nameEn     String?
   parentId   Int?
   icon       String?
-  sortOrder  Int      @default(0)
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  business Business          @relation(fields: [businessId], references: [id])
-  parent   ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children ProductCategory[] @relation("CategoryHierarchy")
-  products Product[]
+  sortOrder  Int               @default(0)
+  isActive   Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  products   Product[]
+  business   Business          @relation(fields: [businessId], references: [id])
+  parent     ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children   ProductCategory[] @relation("CategoryHierarchy")
 }
 
 model Product {
-  id            Int      @id @default(autoincrement())
+  id            Int              @id @default(autoincrement())
   businessId    String
   categoryId    Int?
   name          String
@@ -252,20 +244,19 @@ model Product {
   description   String?
   sku           String?
   barcode       String?
-  price         Float    @default(0)
-  costPrice     Float    @default(0)
+  price         Float            @default(0)
+  costPrice     Float            @default(0)
   discountPrice Float?
-  stockQuantity Int      @default(0)
+  stockQuantity Int              @default(0)
   unit          String?
   images        String?
-  isFeatured    Boolean  @default(false)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  business Business         @relation(fields: [businessId], references: [id])
-  category ProductCategory? @relation(fields: [categoryId], references: [id])
-  requests Request[]
+  isFeatured    Boolean          @default(false)
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  business      Business         @relation(fields: [businessId], references: [id])
+  category      ProductCategory? @relation(fields: [categoryId], references: [id])
+  requests      Request[]
 }
 
 model Warehouse {
@@ -280,8 +271,7 @@ model Warehouse {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
-  business Business @relation(fields: [businessId], references: [id])
+  business     Business @relation(fields: [businessId], references: [id])
 }
 
 model Supplier {
@@ -301,8 +291,7 @@ model Supplier {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
-  business Business @relation(fields: [businessId], references: [id])
+  business      Business @relation(fields: [businessId], references: [id])
 }
 
 model Employee {
@@ -323,12 +312,11 @@ model Employee {
   address    String?
   notes      String?
   isActive   Boolean   @default(true)
-  paidAt     DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
-
-  business Business @relation(fields: [businessId], references: [id])
-  salaries Salary[]
+  paidAt     DateTime?
+  business   Business  @relation(fields: [businessId], references: [id])
+  salaries   Salary[]
 }
 
 model Salary {
@@ -347,9 +335,8 @@ model Salary {
   accountId   Int?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  business Business @relation(fields: [businessId], references: [id])
-  employee Employee @relation(fields: [employeeId], references: [id])
+  business    Business  @relation(fields: [businessId], references: [id])
+  employee    Employee  @relation(fields: [employeeId], references: [id])
 }
 
 model Rent {
@@ -366,102 +353,96 @@ model Rent {
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
-  business Business @relation(fields: [businessId], references: [id])
+  business      Business  @relation(fields: [businessId], references: [id])
 }
 
 model Account {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   businessId     String
   code           String
   name           String
   nameEn         String?
   accountType    String
   parentId       Int?
-  currentBalance Float    @default(0)
-  openingBalance Float    @default(0)
-  isActive       Boolean  @default(true)
+  currentBalance Float     @default(0)
+  openingBalance Float     @default(0)
+  isActive       Boolean   @default(true)
   description    String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  business Business  @relation(fields: [businessId], references: [id])
-  parent   Account?  @relation("AccountHierarchy", fields: [parentId], references: [id])
-  children Account[] @relation("AccountHierarchy")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  business       Business  @relation(fields: [businessId], references: [id])
+  parent         Account?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children       Account[] @relation("AccountHierarchy")
 }
 
 model SalesInvoice {
-  id             Int       @id @default(autoincrement())
+  id             Int                @id @default(autoincrement())
   businessId     String
   invoiceNumber  String
   clientId       Int?
   clientName     String?
   clientPhone    String?
-  subtotal       Float     @default(0)
-  discountAmount Float     @default(0)
-  taxAmount      Float     @default(0)
-  total          Float     @default(0)
-  status         String    @default("draft")
-  paidAmount     Float     @default(0)
+  subtotal       Float              @default(0)
+  discountAmount Float              @default(0)
+  taxAmount      Float              @default(0)
+  total          Float              @default(0)
+  status         String             @default("draft")
+  paidAmount     Float              @default(0)
   paymentMethod  String?
   paymentDate    DateTime?
   accountId      Int?
   dueDate        DateTime?
   notes          String?
-  issuedAt       DateTime  @default(now())
-  createdAt      DateTime  @default(now())
-
-  business Business           @relation(fields: [businessId], references: [id])
-  items    SalesInvoiceItem[]
+  issuedAt       DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+  business       Business           @relation(fields: [businessId], references: [id])
+  items          SalesInvoiceItem[]
 }
 
 model SalesInvoiceItem {
-  id             Int     @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   invoiceId      Int
   productId      Int?
   description    String?
-  quantity       Float   @default(1)
-  unitPrice      Float   @default(0)
-  discountAmount Float   @default(0)
-  total          Float   @default(0)
-
-  invoice SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  quantity       Float        @default(1)
+  unitPrice      Float        @default(0)
+  discountAmount Float        @default(0)
+  total          Float        @default(0)
+  invoice        SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 }
 
 model PurchaseInvoice {
-  id            Int       @id @default(autoincrement())
+  id            Int                   @id @default(autoincrement())
   businessId    String
   invoiceNumber String
   supplierId    Int?
   supplierName  String?
   supplierPhone String?
-  subtotal      Float     @default(0)
-  taxAmount     Float     @default(0)
-  total         Float     @default(0)
-  status        String    @default("draft")
-  paidAmount    Float     @default(0)
+  subtotal      Float                 @default(0)
+  taxAmount     Float                 @default(0)
+  total         Float                 @default(0)
+  status        String                @default("draft")
+  paidAmount    Float                 @default(0)
   paymentMethod String?
   paymentDate   DateTime?
   accountId     Int?
   dueDate       DateTime?
   notes         String?
-  issuedAt      DateTime  @default(now())
-  createdAt     DateTime  @default(now())
-
-  business Business              @relation(fields: [businessId], references: [id])
-  items    PurchaseInvoiceItem[]
+  issuedAt      DateTime              @default(now())
+  createdAt     DateTime              @default(now())
+  business      Business              @relation(fields: [businessId], references: [id])
+  items         PurchaseInvoiceItem[]
 }
 
 model PurchaseInvoiceItem {
-  id          Int     @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   invoiceId   Int
   productId   Int?
   description String?
-  quantity    Float   @default(1)
-  unitPrice   Float   @default(0)
-  total       Float   @default(0)
-
-  invoice PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  quantity    Float           @default(1)
+  unitPrice   Float           @default(0)
+  total       Float           @default(0)
+  invoice     PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 }
 
 model SalesReturn {
@@ -474,8 +455,7 @@ model SalesReturn {
   reason            String?
   status            String   @default("pending")
   createdAt         DateTime @default(now())
-
-  business Business @relation(fields: [businessId], references: [id])
+  business          Business @relation(fields: [businessId], references: [id])
 }
 
 model PurchaseReturn {
@@ -488,8 +468,7 @@ model PurchaseReturn {
   reason            String?
   status            String   @default("pending")
   createdAt         DateTime @default(now())
-
-  business Business @relation(fields: [businessId], references: [id])
+  business          Business @relation(fields: [businessId], references: [id])
 }
 
 model Bond {
@@ -507,8 +486,7 @@ model Bond {
   paymentMethod String?
   issuedDate    DateTime @default(now())
   createdAt     DateTime @default(now())
-
-  business Business @relation(fields: [businessId], references: [id])
+  business      Business @relation(fields: [businessId], references: [id])
 }
 
 model Expense {
@@ -520,49 +498,46 @@ model Expense {
   expenseDate DateTime @default(now())
   receiptUrl  String?
   createdAt   DateTime @default(now())
-
-  business Business @relation(fields: [businessId], references: [id])
+  business    Business @relation(fields: [businessId], references: [id])
 }
 
 model Shareholder {
-  id         Int       @id @default(autoincrement())
-  businessId String
-  userId     String?
-  name       String
-  phone      String?
-  email      String?
-  shareType  String    @default("share")
-  shareCount Int       @default(1)
-  shareValue Float     @default(0)
-  totalValue Float     @default(0)
-  percentage Float     @default(0)
-  joinDate   DateTime  @default(now())
-  exitDate   DateTime?
-  isActive   Boolean   @default(true)
-  notes      String?
-  createdAt  DateTime  @default(now())
-
+  id           Int                      @id @default(autoincrement())
+  businessId   String
+  userId       String?
+  name         String
+  phone        String?
+  email        String?
+  shareType    String                   @default("share")
+  shareCount   Int                      @default(1)
+  shareValue   Float                    @default(0)
+  totalValue   Float                    @default(0)
+  percentage   Float                    @default(0)
+  joinDate     DateTime                 @default(now())
+  exitDate     DateTime?
+  isActive     Boolean                  @default(true)
+  notes        String?
+  createdAt    DateTime                 @default(now())
   business     Business                 @relation(fields: [businessId], references: [id])
   user         User?                    @relation(fields: [userId], references: [id])
   transactions ShareholderTransaction[]
 }
 
 model ShareholderTransaction {
-  id              Int      @id @default(autoincrement())
+  id              Int         @id @default(autoincrement())
   businessId      String
   shareholderId   Int
   userId          String?
   transactionType String
   amount          Float
-  shareCount      Int      @default(0)
+  shareCount      Int         @default(0)
   description     String?
-  transactionDate DateTime @default(now())
+  transactionDate DateTime    @default(now())
   accountId       Int?
-  createdAt       DateTime @default(now())
-
-  business    Business    @relation(fields: [businessId], references: [id])
-  shareholder Shareholder @relation(fields: [shareholderId], references: [id])
-  user        User?       @relation(fields: [userId], references: [id])
+  createdAt       DateTime    @default(now())
+  business        Business    @relation(fields: [businessId], references: [id])
+  shareholder     Shareholder @relation(fields: [shareholderId], references: [id])
+  user            User?       @relation(fields: [userId], references: [id])
 }
 
 model BusinessUser {
@@ -578,9 +553,8 @@ model BusinessUser {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  business Business @relation(fields: [businessId], references: [id])
-  user     User?    @relation(fields: [userId], references: [id])
+  business    Business @relation(fields: [businessId], references: [id])
+  user        User?    @relation(fields: [userId], references: [id])
 }
 
 model BusinessSummary {
@@ -594,8 +568,7 @@ model BusinessSummary {
   transactionCount Int      @default(0)
   monthlyData      Json?
   lastUpdated      DateTime @default(now())
-
-  business Business @relation(fields: [businessId], references: [id])
+  business         Business @relation(fields: [businessId], references: [id])
 }
 
 model Offer {
@@ -613,8 +586,7 @@ model Offer {
   endDate            DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
-
-  business Business @relation(fields: [businessId], references: [id])
+  business           Business  @relation(fields: [businessId], references: [id])
 }
 
 model ProductMovement {
@@ -626,43 +598,40 @@ model ProductMovement {
   quantity     Int
   notes        String?
   createdAt    DateTime @default(now())
-
-  business Business @relation(fields: [businessId], references: [id])
+  business     Business @relation(fields: [businessId], references: [id])
 }
 
 model PriceQuote {
-  id                   Int       @id @default(autoincrement())
+  id                   Int              @id @default(autoincrement())
   businessId           String
   quoteNumber          String
   clientId             Int?
   clientName           String?
   clientPhone          String?
-  subtotal             Float     @default(0)
-  discountAmount       Float     @default(0)
-  taxAmount            Float     @default(0)
-  total                Float     @default(0)
-  status               String    @default("draft")
+  subtotal             Float            @default(0)
+  discountAmount       Float            @default(0)
+  taxAmount            Float            @default(0)
+  total                Float            @default(0)
+  status               String           @default("draft")
   validUntil           DateTime?
   notes                String?
   convertedToInvoiceId Int?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  business Business         @relation(fields: [businessId], references: [id])
-  items    PriceQuoteItem[]
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  business             Business         @relation(fields: [businessId], references: [id])
+  items                PriceQuoteItem[]
 }
 
 model PriceQuoteItem {
-  id             Int     @id @default(autoincrement())
+  id             Int        @id @default(autoincrement())
   quoteId        Int
   productId      Int?
   description    String?
-  quantity       Float   @default(1)
-  unitPrice      Float   @default(0)
-  discountAmount Float   @default(0)
-  total          Float   @default(0)
-
-  quote PriceQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quantity       Float      @default(1)
+  unitPrice      Float      @default(0)
+  discountAmount Float      @default(0)
+  total          Float      @default(0)
+  quote          PriceQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 }
 
 model NotificationLog {
@@ -677,11 +646,10 @@ model NotificationLog {
   paymentId  String
   invoiceId  String?
   paymentUrl String?
-  paidAt     DateTime?
   createdAt  DateTime  @default(now())
   sentAt     DateTime?
-
-  business Business @relation(fields: [businessId], references: [id])
+  paidAt     DateTime?
+  business   Business  @relation(fields: [businessId], references: [id])
 }
 
 model Subscription {
@@ -694,10 +662,9 @@ model Subscription {
   status     String    @default("active")
   paymentId  String
   paymentUrl String?
-  paidAt     DateTime?
   createdAt  DateTime  @default(now())
-
-  business Business @relation(fields: [businessId], references: [id])
+  paidAt     DateTime?
+  business   Business  @relation(fields: [businessId], references: [id])
 }
 
 model BusinessClient {
@@ -710,8 +677,7 @@ model BusinessClient {
   address    String?
   notes      String?
   createdAt  DateTime @default(now())
-
-  business Business @relation(fields: [businessId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id])
 }
 
 model BusinessTransaction {
@@ -728,8 +694,7 @@ model BusinessTransaction {
   transactionDate DateTime @default(now())
   tags            String?
   createdAt       DateTime @default(now())
-
-  business Business @relation(fields: [businessId], references: [id])
+  business        Business @relation(fields: [businessId], references: [id])
 }
 
 model AuditLog {
@@ -742,29 +707,25 @@ model AuditLog {
   changes    Json?
   ipAddress  String?
   createdAt  DateTime @default(now())
-
-  business Business @relation(fields: [businessId], references: [id])
-  user     User?    @relation(fields: [userId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id])
 }
 
 model CraftsmanIDocument {
-  id                  Int       @id @default(autoincrement())
-  craftsmanId         String
-  civilIdUrl          String?
-  bankAccountPhotoUrl String?
-  bankName            String?
-  bankIban            String?
-  status              String    @default("pending")
-  reviewedBy          String?
-  reviewedAt          DateTime?
-  subscriptionStatus    String    @default("inactive") // active, inactive, expired
+  id                     Int       @id @default(autoincrement())
+  craftsmanId            String    @unique
+  civilIdUrl             String?
+  bankAccountPhotoUrl    String?
+  bankName               String?
+  bankIban               String?
+  status                 String    @default("pending")
+  reviewedBy             String?
+  reviewedAt             DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
   subscriptionExpiryDate DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
-  craftsman User @relation(fields: [craftsmanId], references: [id])
-
-  @@unique([craftsmanId])
+  subscriptionStatus     String    @default("inactive")
+  craftsman              User      @relation(fields: [craftsmanId], references: [id])
 }
 
 model PayoutRequest {
@@ -774,8 +735,7 @@ model PayoutRequest {
   status      String   @default("pending")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  craftsman User @relation(fields: [craftsmanId], references: [id])
+  craftsman   User     @relation(fields: [craftsmanId], references: [id])
 }
 
 model InterventionRequest {
@@ -787,8 +747,7 @@ model InterventionRequest {
   status             String   @default("pending")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
-
-  client User @relation(fields: [clientId], references: [id])
+  client             User     @relation(fields: [clientId], references: [id])
 }
 
 model Notification {
@@ -799,53 +758,50 @@ model Notification {
   type      String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model RefundRequest {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   requestId  Int
   amount     Float
   reason     String?
   adminNotes String?
-  status     String   @default("pending") // pending, approved, rejected
+  status     String    @default("pending")
   paymentId  String
   paymentUrl String?
-  paidAt     DateTime?
   createdAt  DateTime  @default(now())
-  updatedAt  DateTime @updatedAt
-  request Request @relation(fields: [requestId], references: [id])
+  updatedAt  DateTime  @updatedAt
+  paidAt     DateTime?
+  request    Request   @relation(fields: [requestId], references: [id])
 }
 
 model PaymentTransaction {
   id         Int       @id @default(autoincrement())
-  requestId  Int
-  amount     Float
-  type       String
-  status     String
   paymentId  String
   invoiceId  String?
+  requestId  Int
+  type       String
+  amount     Float
+  status     String
   paymentUrl String?
-  paidAt     DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+  paidAt     DateTime?
   request    Request   @relation(fields: [requestId], references: [id])
 }
 
-
 model SubscriptionPayment {
-  id          Int      @id @default(autoincrement())
-  userId      String
-  amount      Float
-  status      String   @default("pending") // pending, paid, failed
-  paymentId   String?
-  invoiceId   String?
-  startDate   DateTime
-  endDate     DateTime
-  createdAt   DateTime @default(now())
-  
-  user        User     @relation(fields: [userId], references: [id])
+  id        Int      @id @default(autoincrement())
+  userId    String
+  amount    Float
+  status    String   @default("pending")
+  paymentId String?
+  invoiceId String?
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model AppSettings {
@@ -853,40 +809,34 @@ model AppSettings {
   value String
 }
 
-
 model Conversation {
   id            String    @id @default(cuid())
-  requestId     Int?      // ربط المحادثة بطلب معين (اختياري)
+  requestId     Int?
   clientId      String
   craftsmanId   String
   lastMessage   String?
   lastMessageAt DateTime  @default(now())
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
-  client        User       @relation("ClientConversations", fields: [clientId], references: [id])
-  craftsman     User       @relation("CraftsmanConversations", fields: [craftsmanId], references: [id])
-  request       Request?   @relation(fields: [requestId], references: [id])
+  client        User      @relation("ClientConversations", fields: [clientId], references: [id])
+  craftsman     User      @relation("CraftsmanConversations", fields: [craftsmanId], references: [id])
+  request       Request?  @relation(fields: [requestId], references: [id])
   messages      Message[]
 
-  // منع تكرار المحادثات لنفس الأطراف ونفس الطلب
   @@unique([clientId, craftsmanId, requestId])
-  // فهارس لتسريع البحث عن محادثات المستخدم
   @@index([clientId])
   @@index([craftsmanId])
 }
 
 model Message {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   conversationId String
-  senderId       String   // معرف من أرسل الرسالة
+  senderId       String
   text           String
-  isRead         Boolean  @default(false)
-  createdAt      DateTime @default(now())
-
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation(fields: [senderId], references: [id])
 
-  // فهرس لتسريع جلب الرسائل حسب المحادثة والترتيب الزمني
   @@index([conversationId, createdAt])
 }
