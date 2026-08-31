@@ -64,12 +64,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     if (!conv) return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
 
-    // إنشاء الرسالة
+    // إنشاء الرسالة باستخدام connect لضمان سلامة العلاقات في Prisma
     const newMessage = await db.message.create({
       data: {
-        conversationId,
-        senderId: session.userId,
-        text: content.trim().slice(0, 2000) // حماية من الرسائل الضخمة
+        text: content.trim().slice(0, 2000), // حماية من الرسائل الضخمة
+        sender: { connect: { id: session.userId } },
+        conversation: { connect: { id: conversationId } }
       },
       include: { sender: { select: { id: true, name: true } } }
     });
