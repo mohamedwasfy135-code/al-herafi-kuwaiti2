@@ -64,14 +64,26 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     if (!conv) return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
 
-    // إنشاء الرسالة باستخدام connect لضمان سلامة العلاقات في Prisma
+    console.log('📥 [Chat API] محاولة إرسال رسالة:', { 
+      conversationId, 
+      userId: session.userId, 
+      contentLength: content?.length 
+    });
+
+    if (!session.userId) {
+      return NextResponse.json({ error: 'غير مصرح: معرف المستخدم مفقود' }, { status: 401 });
+    }
+
+    // الطريقة المباشرة والأكثر موثوقية في Prisma عند وجود المعرفات
     const newMessage = await db.message.create({
       data: {
-        text: content.trim().slice(0, 2000), // حماية من الرسائل الضخمة
-        sender: { connect: { id: session.userId } },
-        conversation: { connect: { id: conversationId } }
+        conversationId: conversationId,
+        senderId: session.userId,
+        text: content.trim().slice(0, 2000) // حماية من الرسائل الضخمة
       },
-      include: { sender: { select: { id: true, name: true } } }
+      include: { 
+        sender: { select: { id: true, name: true } } 
+      }
     });
 
     // تحديث آخر رسالة في المحادثة
