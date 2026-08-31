@@ -25,6 +25,8 @@ export async function GET() {
         avatarUrl: true,
         verification_status: true,
         is_available: true,
+        subscriptionStatus: true,
+        subscriptionExpiryDate: true,
         createdAt: true,
       }
     })

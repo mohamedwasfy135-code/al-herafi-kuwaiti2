@@ -26,6 +26,9 @@ export default function AdminDashboard() {
   const [pendingDocs, setPendingDocs] = useState<any[]>([])
   const [pendingRefunds, setPendingRefunds] = useState<any[]>([])
   const [interventionRequests, setInterventionRequests] = useState<any[]>([])
+  const [subSettings, setSubSettings] = useState<any>(null)
+  const [newSubFee, setNewSubFee] = useState('')
+  const [updatingFee, setUpdatingFee] = useState(false)
 
   useEffect(() => {
     async function checkSession() {
@@ -58,7 +61,7 @@ export default function AdminDashboard() {
   const loadAll = async () => {
     try {
       const [
-        statsRes, usersRes, reqRes, payoutRes, changeReqRes, earningsRes, financialsRes,
+        statsRes, usersRes, reqRes, payoutRes, changeReqRes, earningsRes, financialsRes, subRes,
         docsRes, refundsRes, interventionRes
       ] = await Promise.all([
         fetch('/api/admin/stats').catch(() => null),
@@ -71,6 +74,7 @@ export default function AdminDashboard() {
         fetch('/api/admin/documents').catch(() => null),
         fetch('/api/admin/refund-requests').catch(() => null),
         fetch('/api/admin/intervention-requests').catch(() => null),
+        fetch('/api/admin/subscription-settings').catch(() => null),
       ])
 
       const statsData = statsRes?.ok ? await statsRes.json() : {}
@@ -83,6 +87,7 @@ export default function AdminDashboard() {
       const docsData = docsRes?.ok ? await docsRes.json() : { documents: [] }
       const refundsData = refundsRes?.ok ? await refundsRes.json() : { refunds: [] }
       const interventionData = interventionRes?.ok ? await interventionRes.json() : { requests: [] }
+      const subData = subRes?.ok ? await subRes.json() : null
 
       setStats(statsData)
       setUsers(usersData.users || [])
@@ -94,6 +99,8 @@ export default function AdminDashboard() {
       setPendingDocs(docsData.documents || [])
       setPendingRefunds(refundsData.refunds || [])
       setInterventionRequests(interventionData.requests || [])
+      setSubSettings(subData)
+      if (subData) setNewSubFee(String(subData.fee))
       setCraftsmen((usersData.users || []).filter((x: any) => x.role === 'craftsman' && x.verification_status === 'approved'))
     } catch (err) {
       console.error('LoadAll error:', err)
@@ -144,6 +151,30 @@ export default function AdminDashboard() {
       }
       setTimeout(() => setMsg(''), 3000)
     } catch (err) { console.error(err) }
+  }
+
+  const handleUpdateSubFee = async () => {
+    if (!newSubFee || parseFloat(newSubFee) <= 0) {
+      setMsg('❌ يرجى إدخال قيمة صحيحة')
+      setTimeout(() => setMsg(''), 3000)
+      return
+    }
+    setUpdatingFee(true)
+    try {
+      const res = await fetch('/api/admin/subscription-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fee: parseFloat(newSubFee) })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setMsg('✅ تم تحديث قيمة الاشتراك بنجاح')
+        loadAll()
+      } else {
+        setMsg('❌ ' + (data.error || 'فشل التحديث'))
+      }
+    } catch { setMsg('❌ حدث خطأ') }
+    finally { setUpdatingFee(false); setTimeout(() => setMsg(''), 3000) }
   }
 
   const updatePayout = async (payoutId: string, status: string) => {
@@ -229,6 +260,7 @@ export default function AdminDashboard() {
     { key: 'documents', label: t('admin.documents'), icon: '📄' },
     { key: 'refunds', label: t('admin.refunds'), icon: '💵' },
     { key: 'interventions', label: t('admin.interventions'), icon: '🛠️' },
+    { key: 'subscriptions', label: 'الاشتراكات', icon: '💳' },
   ]
 
   const statusColor = (status: string) => {
@@ -569,6 +601,52 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* الاشتراكات */}
+          {tab === 'subscriptions' && (
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-8">إدارة الاشتراكات</h1>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-green-50 rounded-xl p-6 border border-green-200">
+                  <p className="text-green-700 text-sm font-bold">الحرفيون النشطون</p>
+                  <p className="text-3xl font-bold text-green-900 mt-2">{subSettings?.stats?.activeCraftsmen || 0}</p>
+                </div>
+                <div className="bg-red-50 rounded-xl p-6 border border-red-200">
+                  <p className="text-red-700 text-sm font-bold">انتهت اشتراكاتهم</p>
+                  <p className="text-3xl font-bold text-red-900 mt-2">{subSettings?.stats?.expiredCraftsmen || 0}</p>
+                </div>
+                <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                  <p className="text-blue-700 text-sm font-bold">إجمالي إيرادات الاشتراكات</p>
+                  <p className="text-3xl font-bold text-blue-900 mt-2">{(subSettings?.stats?.totalRevenue || 0).toFixed(2)} د.ك</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm p-6 border mb-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">إعدادات قيمة الاشتراك</h2>
+                <div className="flex gap-4 items-end flex-wrap">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">قيمة الاشتراك الشهري (د.ك)</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="1"
+                      value={newSubFee}
+                      onChange={(e) => setNewSubFee(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    />
+                  </div>
+                  <button
+                    onClick={handleUpdateSubFee}
+                    disabled={updatingFee}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-bold transition disabled:opacity-50"
+                  >
+                    {updatingFee ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+                  </button>
+                </div>
               </div>
             </div>
           )}

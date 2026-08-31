@@ -26,6 +26,8 @@ export default function CraftsmanDashboard() {
   const [availableBalance, setAvailableBalance] = useState(0)
   const [payoutAmount, setPayoutAmount] = useState('')
   const [payoutLoading, setPayoutLoading] = useState(false)
+  const [subscriptionPayments, setSubscriptionPayments] = useState<any[]>([])
+  const [isRenewing, setIsRenewing] = useState(false)
 
   useEffect(() => {
     async function checkAuth() {
@@ -80,6 +82,12 @@ export default function CraftsmanDashboard() {
       if (notifRes.ok) {
         const notifData = await notifRes.json()
         setNotifications(notifData.notifications || [])
+      }
+
+      const subRes = await fetch('/api/subscription/history')
+      if (subRes.ok) {
+        const subData = await subRes.json()
+        setSubscriptionPayments(subData.payments || [])
       }
     } catch (error) {
       console.error('Load data error:', error)
@@ -195,6 +203,22 @@ export default function CraftsmanDashboard() {
     finally { setPayoutLoading(false); setTimeout(() => setMsg(''), 4000) }
   }
 
+  const handleRenewSubscription = async () => {
+    setIsRenewing(true)
+    try {
+      const res = await fetch('/api/subscription/create-invoice', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        window.open(data.paymentUrl, '_blank')
+        setMsg('✅ تم فتح صفحة الدفع، يرجى إتمام العملية')
+        setTimeout(() => loadAllData(), 5000) // إعادة التحميل بعد 5 ثواني للتحقق
+      } else {
+        setMsg('❌ ' + (data.error || 'فشل إنشاء الفاتورة'))
+      }
+    } catch { setMsg('❌ حدث خطأ في الاتصال') }
+    finally { setIsRenewing(false); setTimeout(() => setMsg(''), 4000) }
+  }
+
   const toggleAvailability = async () => {
     try {
       const res = await fetch('/api/craftsman/availability', {
@@ -234,6 +258,7 @@ export default function CraftsmanDashboard() {
     { key: 'documents', label: 'الوثائق', icon: '📄' },
     { key: 'availability', label: 'التوفر', icon: '🟢' },
     { key: 'changeProfession', label: 'تغيير المهنة', icon: '🔄' },
+    { key: 'subscription', label: 'الاشتراك', icon: '💳' },
   ]
 
   const getStatusBadge = (status: string) => {
@@ -297,6 +322,12 @@ export default function CraftsmanDashboard() {
       {/* المحتوى الرئيسي */}
       <main className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
+          {(user?.subscriptionStatus !== 'active' && user?.subscriptionStatus !== 'inactive') && (
+            <div className="p-4 rounded-lg mb-6 font-bold bg-red-100 text-red-800 border border-red-300 flex justify-between items-center">
+              <span>⚠️ اشتراكك منتهي. يرجى تجديد الاشتراك لمواصلة استقبال الطلبات.</span>
+              <button onClick={() => setTab('subscription')} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition">تجديد الآن</button>
+            </div>
+          )}
           {msg && (
             <div className={`p-4 rounded-lg mb-6 font-bold ${
               msg.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -565,6 +596,64 @@ export default function CraftsmanDashboard() {
                           <p className="text-xs text-gray-500">{new Date(earning.createdAt).toLocaleDateString('ar-KW')}</p>
                         </div>
                         <p className="text-green-600 font-bold text-lg">{earning.amount} د.ك</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* الاشتراك */}
+          {tab === 'subscription' && (
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-8">إدارة الاشتراك</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className={`rounded-xl p-6 border ${user?.subscriptionStatus === 'active' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                  <p className={`text-sm font-bold ${user?.subscriptionStatus === 'active' ? 'text-green-700' : 'text-red-700'}`}>
+                    حالة الاشتراك
+                  </p>
+                  <p className={`text-3xl font-bold mt-2 ${user?.subscriptionStatus === 'active' ? 'text-green-900' : 'text-red-900'}`}>
+                    {user?.subscriptionStatus === 'active' ? 'نشط ✅' : 'منتهي ❌'}
+                  </p>
+                  {user?.subscriptionExpiryDate && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      ينتهي في: {new Date(user.subscriptionExpiryDate).toLocaleDateString('ar-KW')}
+                    </p>
+                  )}
+                </div>
+                <div className="bg-white rounded-xl p-6 border flex flex-col justify-center items-center text-center">
+                  <p className="text-gray-700 font-bold mb-4">تجديد الاشتراك الشهري</p>
+                  <button 
+                    onClick={handleRenewSubscription}
+                    disabled={isRenewing}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-bold transition disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isRenewing ? 'جاري إنشاء الفاتورة...' : '💳 تجديد الاشتراك الآن'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm p-6 border">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">سجل مدفوعات الاشتراك</h2>
+                {subscriptionPayments.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">لا توجد مدفوعات سابقة</p>
+                ) : (
+                  <div className="space-y-3">
+                    {subscriptionPayments.map((p: any) => (
+                      <div key={p.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-bold text-gray-900">{p.amount} د.ك</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(p.startDate).toLocaleDateString('ar-KW')} - {new Date(p.endDate).toLocaleDateString('ar-KW')}
+                          </p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          p.status === 'paid' ? 'bg-green-100 text-green-800' : 
+                          p.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {p.status === 'paid' ? 'مدفوع' : p.status === 'pending' ? 'قيد الانتظار' : 'فشل'}
+                        </span>
                       </div>
                     ))}
                   </div>
