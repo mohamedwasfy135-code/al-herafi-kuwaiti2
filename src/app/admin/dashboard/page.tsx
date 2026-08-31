@@ -71,10 +71,10 @@ export default function AdminDashboard() {
         fetch('/api/admin/change-requests').catch(() => null),
         fetch('/api/earnings').catch(() => null),
         fetch('/api/admin/financials').catch(() => null),
+        fetch('/api/admin/subscription-settings').catch(() => null),
         fetch('/api/admin/documents').catch(() => null),
         fetch('/api/admin/refund-requests').catch(() => null),
         fetch('/api/admin/intervention-requests').catch(() => null),
-        fetch('/api/admin/subscription-settings').catch(() => null),
       ])
 
       const statsData = statsRes?.ok ? await statsRes.json() : {}
