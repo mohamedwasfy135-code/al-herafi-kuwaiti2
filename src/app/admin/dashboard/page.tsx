@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [msg, setMsg] = useState('')
   const [changeRequests, setChangeRequests] = useState<any[]>([])
   const [earnings, setEarnings] = useState<any[]>([])
+  const [financials, setFinancials] = useState<any>(null)
   const [pendingDocs, setPendingDocs] = useState<any[]>([])
   const [pendingRefunds, setPendingRefunds] = useState<any[]>([])
   const [interventionRequests, setInterventionRequests] = useState<any[]>([])
@@ -57,7 +58,7 @@ export default function AdminDashboard() {
   const loadAll = async () => {
     try {
       const [
-        statsRes, usersRes, reqRes, payoutRes, changeReqRes, earningsRes,
+        statsRes, usersRes, reqRes, payoutRes, changeReqRes, earningsRes, financialsRes,
         docsRes, refundsRes, interventionRes
       ] = await Promise.all([
         fetch('/api/admin/stats').catch(() => null),
@@ -66,6 +67,7 @@ export default function AdminDashboard() {
         fetch('/api/admin/payouts').catch(() => null),
         fetch('/api/admin/change-requests').catch(() => null),
         fetch('/api/earnings').catch(() => null),
+        fetch('/api/admin/financials').catch(() => null),
         fetch('/api/admin/documents').catch(() => null),
         fetch('/api/admin/refund-requests').catch(() => null),
         fetch('/api/admin/intervention-requests').catch(() => null),
@@ -77,6 +79,7 @@ export default function AdminDashboard() {
       const payoutData = payoutRes?.ok ? await payoutRes.json() : { payouts: [] }
       const changeReqData = changeReqRes?.ok ? await changeReqRes.json() : { requests: [] }
       const earningsData = earningsRes?.ok ? await earningsRes.json() : { earnings: [] }
+      const financialsData = financialsRes?.ok ? await financialsRes.json() : null
       const docsData = docsRes?.ok ? await docsRes.json() : { documents: [] }
       const refundsData = refundsRes?.ok ? await refundsRes.json() : { refunds: [] }
       const interventionData = interventionRes?.ok ? await interventionRes.json() : { requests: [] }
@@ -87,6 +90,7 @@ export default function AdminDashboard() {
       setPayouts(payoutData.payouts || [])
       setChangeRequests(changeReqData.requests || [])
       setEarnings(earningsData.earnings || earningsData.data || [])
+      setFinancials(financialsData?.summary || null)
       setPendingDocs(docsData.documents || [])
       setPendingRefunds(refundsData.refunds || [])
       setInterventionRequests(interventionData.requests || [])
@@ -526,19 +530,45 @@ export default function AdminDashboard() {
           {/* الأرباح */}
           {tab === 'earnings' && (
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200 bg-gray-50">
+              <div className="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900">{t('admin.earnings')}</h2>
               </div>
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                    <p className="text-green-700 text-sm font-bold">{isRTL ? 'إجمالي الأرباح' : 'Total Earnings'}</p>
-                    <p className="text-2xl font-bold text-green-900 mt-2">
-                      {earnings.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0).toFixed(2)} {isRTL ? 'د.ك' : 'KWD'}
-                    </p>
+                {financials ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                      <p className="text-emerald-700 text-sm font-bold">إجمالي أرباح المنصة (10%)</p>
+                      <p className="text-2xl font-bold text-emerald-900 mt-2">
+                        {financials.totalPlatformFee.toFixed(3)} د.ك
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <p className="text-blue-700 text-sm font-bold">إجمالي مستحقات الحرفيين (90%)</p>
+                      <p className="text-2xl font-bold text-blue-900 mt-2">
+                        {financials.totalCraftsmanEarnings.toFixed(3)} د.ك
+                      </p>
+                    </div>
+                    <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                      <p className="text-amber-700 text-sm font-bold">طلبات السحب المعلقة</p>
+                      <p className="text-2xl font-bold text-amber-900 mt-2">
+                        {financials.totalPendingPayouts.toFixed(3)} د.ك
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <p className="text-blue-700 text-sm font-bold">{isRTL ? 'عدد العمليات' : 'Total Transactions'}</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                      <p className="text-green-700 text-sm font-bold">{isRTL ? 'إجمالي الأرباح' : 'Total Earnings'}</p>
+                      <p className="text-2xl font-bold text-green-900 mt-2">
+                        {earnings.reduce((sum: number, e: any) => sum + (parseFloat(e.amount) || 0), 0).toFixed(2)} {isRTL ? 'د.ك' : 'KWD'}
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <p className="text-blue-700 text-sm font-bold">{isRTL ? 'عدد العمليات' : 'Total Transactions'}</p>
+                      <p className="text-2xl font-bold text-blue-900 mt-2">{earnings.length}</p>
+                    </div>
+                  </div>
+                )}
                     <p className="text-2xl font-bold text-blue-900 mt-2">{earnings.length}</p>
                   </div>
                   <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
