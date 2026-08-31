@@ -46,6 +46,9 @@ model User {
   ratingsGiven            Rating[]                 @relation("RatingGiver")
   ratingsReceived         Rating[]                 @relation("RatingReceiver")
   requestAssignments      RequestAssignment[]
+  clientConversations   Conversation[] @relation("ClientConversations")
+  craftsmanConversations Conversation[] @relation("CraftsmanConversations")
+  sentMessages           Message[]
 }
 
 model Business {
@@ -149,6 +152,7 @@ model Request {
   currentAssignmentId     Int?
   requiresAdminAssignment Boolean   @default(false)
   status                  String    @default("pending")
+  conversations           Conversation[]
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
@@ -847,4 +851,42 @@ model SubscriptionPayment {
 model AppSettings {
   key   String @id
   value String
+}
+
+
+model Conversation {
+  id            String    @id @default(cuid())
+  requestId     Int?      // ربط المحادثة بطلب معين (اختياري)
+  clientId      String
+  craftsmanId   String
+  lastMessage   String?
+  lastMessageAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  client        User       @relation("ClientConversations", fields: [clientId], references: [id])
+  craftsman     User       @relation("CraftsmanConversations", fields: [craftsmanId], references: [id])
+  request       Request?   @relation(fields: [requestId], references: [id])
+  messages      Message[]
+
+  // منع تكرار المحادثات لنفس الأطراف ونفس الطلب
+  @@unique([clientId, craftsmanId, requestId])
+  // فهارس لتسريع البحث عن محادثات المستخدم
+  @@index([clientId])
+  @@index([craftsmanId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String   // معرف من أرسل الرسالة
+  text           String
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id])
+
+  // فهرس لتسريع جلب الرسائل حسب المحادثة والترتيب الزمني
+  @@index([conversationId, createdAt])
 }

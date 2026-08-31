@@ -145,7 +145,29 @@ export default function ClientDashboard() {
     return <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${s.color}`}>{s.label}</span>
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50">جاري التحميل...</div>
+  
+  const handleStartChat = async (craftsmanId: string, requestId: number) => {
+    if (!user) return;
+    try {
+      const res = await fetch('/api/chat/conversations', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ craftsmanId, requestId })
+      });
+      const data = await res.json();
+      if (data.success && data.conversation) {
+        window.location.href = `/chat?conversationId=${data.conversation.id}`;
+      } else {
+        alert(data.error || 'فشل بدء المحادثة');
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      alert('حدث خطأ في الاتصال');
+    }
+  }
+
+  if (loading) return <div className="p-8 text-center text-gray-500">جاري التحميل...</div>; <div className="min-h-screen flex items-center justify-center bg-gray-50">جاري التحميل...</div>
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-50">
@@ -230,8 +252,14 @@ export default function ClientDashboard() {
                     <p className="text-gray-700 mb-3">{req.description}</p>
                     
                     {req.craftsman && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg flex justify-between items-center gap-3">
                         <p className="text-sm text-blue-800"><span className="font-semibold">الحرفي:</span> {req.craftsman.name} {req.craftsman.phone && `| 📞 ${req.craftsman.phone}`}</p>
+                        <button 
+                          onClick={() => handleStartChat(req.craftsman.id, req.id)}
+                          className="bg-blue-600 text-white text-xs px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-1 font-bold whitespace-nowrap"
+                        >
+                          💬 محادثة
+                        </button>
                       </div>
                     )}
 

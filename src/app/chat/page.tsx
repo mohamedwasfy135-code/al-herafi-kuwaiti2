@@ -43,7 +43,7 @@ export default function ChatPage() {
 
   const loadChats = async (uid: string) => {
     try {
-      const res = await fetch('/api/chats')
+      const res = await fetch('/api/chats', { credentials: 'include' })
       const data = await res.json()
       const raw = data.chats || data.data || []
       // تنسيق البيانات لعرض اسم الطرف الآخر
@@ -63,7 +63,7 @@ export default function ChatPage() {
     setLoadingMessages(true)
     setSelectedChat(chatId)
     try {
-      const res = await fetch(`/api/chats/${chatId}/messages`)
+      const res = await fetch(`/api/chats/${chatId}/messages`, { credentials: 'include' })
       const data = await res.json()
       setMessages(data.messages || data.data || [])
     } catch (e) {
@@ -79,6 +79,7 @@ export default function ChatPage() {
     try {
       const res = await fetch(`/api/chats/${selectedChat}/messages`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newMsg }),
       })
