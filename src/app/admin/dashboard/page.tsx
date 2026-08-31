@@ -569,13 +569,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 )}
-                    <p className="text-2xl font-bold text-blue-900 mt-2">{earnings.length}</p>
-                  </div>
-                  <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                    <p className="text-yellow-700 text-sm font-bold">{isRTL ? 'طلبات دفعات معلقة' : 'Pending Payouts'}</p>
-                    <p className="text-2xl font-bold text-yellow-900 mt-2">{payouts.filter(p => p.status === 'pending').length}</p>
-                  </div>
-                </div>
               </div>
             </div>
           )}
