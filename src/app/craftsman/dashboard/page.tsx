@@ -209,8 +209,8 @@ export default function CraftsmanDashboard() {
       const res = await fetch('/api/subscription/create-invoice', { method: 'POST' })
       const data = await res.json()
       if (res.ok && data.success) {
-        window.open(data.paymentUrl, '_blank')
-        setMsg('✅ تم فتح صفحة الدفع، يرجى إتمام العملية')
+        window.location.href = data.paymentUrl
+        setMsg('✅ جاري التوجيه إلى صفحة الدفع الآمنة...')
         setTimeout(() => loadAllData(), 5000) // إعادة التحميل بعد 5 ثواني للتحقق
       } else {
         setMsg('❌ ' + (data.error || 'فشل إنشاء الفاتورة'))

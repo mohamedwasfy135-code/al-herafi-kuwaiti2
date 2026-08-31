@@ -1,24 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getInvoiceStatus } from '@/lib/myfatoorah';
 
-export async function GET(request: NextRequest) {
+// دالة موحدة للتعامل مع GET و POST لضمان عدم فشل الاستدعاء
+async function handleCallback(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const invoiceId = searchParams.get('paymentId') || searchParams.get('id');
-    const status = searchParams.get('status');
+    const incomingId = searchParams.get('paymentId') || searchParams.get('InvoiceId') || searchParams.get('id');
 
-    console.log('📥 [Subscription Callback] استلام إشعار:', { invoiceId, status });
-
-    if (!invoiceId) {
+    if (!incomingId) {
+      console.error('❌ [Subscription Callback] لم يصل أي معرف من ماي فاتورة');
       return NextResponse.redirect(new URL('/craftsman/dashboard?msg=callback_error', request.url));
     }
 
-    // البحث عن سجل الدفع المعلق
+    console.log('📥 [Subscription Callback] استلام إشعار:', { incomingId });
+
     const payment = await db.subscriptionPayment.findFirst({
       where: {
         OR: [
-          { invoiceId: String(invoiceId) },
-          { paymentId: String(invoiceId) }
+          { invoiceId: String(incomingId) },
+          { paymentId: String(incomingId) }
         ],
         status: 'pending'
       },
@@ -26,18 +27,37 @@ export async function GET(request: NextRequest) {
     });
 
     if (!payment) {
-      console.error(`❌ لم يتم العثور على دفعة معلقة للمعرف: ${invoiceId}`);
+      console.error(`❌ لم يتم العثور على دفعة معلقة للمعرف: ${incomingId}`);
       return NextResponse.redirect(new URL('/craftsman/dashboard?msg=transaction_not_found', request.url));
     }
 
-    if (status?.toLowerCase() === 'success') {
-      // ✅ تحديث حالة الدفع
+    let statusData;
+    try {
+      statusData = await getInvoiceStatus(incomingId, 'PaymentId');
+    } catch {
+      try {
+        statusData = await getInvoiceStatus(incomingId, 'InvoiceId');
+      } catch (e) {
+        console.error('فشل التحقق من حالة الفاتورة:', e);
+      }
+    }
+
+    const isPaid = statusData?.InvoiceStatus === 'Paid';
+    const verifiedInvoiceId = String(statusData?.InvoiceId || incomingId);
+    const verifiedPaymentId = statusData?.InvoiceTransactions?.[0]?.PaymentId 
+      ? String(statusData.InvoiceTransactions[0].PaymentId) 
+      : incomingId;
+
+    if (isPaid) {
       await db.subscriptionPayment.update({
         where: { id: payment.id },
-        data: { status: 'paid' }
+        data: { 
+          status: 'paid',
+          invoiceId: verifiedInvoiceId,
+          paymentId: verifiedPaymentId
+        }
       });
 
-      // ✅ تمديد اشتراك الحرفي لمدة شهر من تاريخ الدفع (أو من تاريخ النهاية الحالي إذا كان نشطاً)
       const baseDate = payment.user.subscriptionStatus === 'active' && payment.user.subscriptionExpiryDate 
         ? new Date(payment.user.subscriptionExpiryDate) 
         : new Date();
@@ -53,11 +73,10 @@ export async function GET(request: NextRequest) {
         }
       });
 
-      console.log(`✅ تم تجديد اشتراك الحرفي ${payment.userId} حتى ${newExpiryDate.toLocaleDateString('ar-KW')}`);
-      
+      console.log(`✅ تم تجديد اشتراك الحرفي ${payment.userId} بنجاح حتى ${newExpiryDate.toLocaleDateString('ar-KW')}`);
       return NextResponse.redirect(new URL('/craftsman/dashboard?msg=subscription_renewed', request.url));
+      
     } else {
-      // فشل الدفع
       await db.subscriptionPayment.update({
         where: { id: payment.id },
         data: { status: 'failed' }
@@ -69,4 +88,12 @@ export async function GET(request: NextRequest) {
     console.error('💥 خطأ فادح في Subscription Callback:', error);
     return NextResponse.redirect(new URL('/craftsman/dashboard?msg=callback_error', request.url));
   }
+}
+
+export async function GET(request: NextRequest) {
+  return handleCallback(request);
+}
+
+export async function POST(request: NextRequest) {
+  return handleCallback(request);
 }

@@ -25,6 +25,54 @@ export async function GET(request: NextRequest) {
       ? String(statusData.InvoiceTransactions[0].PaymentId)
       : incomingId;
 
+
+    // ✅ فحص ما إذا كانت المعاملة تخص اشتراك حرفي
+    const subscriptionPayment = await db.subscriptionPayment.findFirst({
+      where: {
+        OR: [
+          { invoiceId: invoiceIdFromMF },
+          { paymentId: paymentIdFromMF }
+        ],
+        status: 'pending'
+      },
+      include: { user: true }
+    });
+
+    if (subscriptionPayment) {
+      console.log(' [MyFatoorah Callback] معاملة اشتراك حرفي:', subscriptionPayment.id);
+      
+      await db.subscriptionPayment.update({
+        where: { id: subscriptionPayment.id },
+        data: { 
+          status: isPaid ? 'paid' : 'failed',
+          invoiceId: invoiceIdFromMF,
+          paymentId: paymentIdFromMF
+        }
+      });
+
+      if (isPaid) {
+        const baseDate = subscriptionPayment.user.subscriptionStatus === 'active' && subscriptionPayment.user.subscriptionExpiryDate 
+          ? new Date(subscriptionPayment.user.subscriptionExpiryDate) 
+          : new Date();
+        
+        const newExpiryDate = new Date(baseDate);
+        newExpiryDate.setMonth(newExpiryDate.getMonth() + 1);
+
+        await db.user.update({
+          where: { id: subscriptionPayment.userId },
+          data: {
+            subscriptionStatus: 'active',
+            subscriptionExpiryDate: newExpiryDate
+          }
+        });
+
+        console.log(`✅ تم تجديد اشتراك الحرفي ${subscriptionPayment.userId} حتى ${newExpiryDate.toLocaleDateString('ar-KW')}`);
+        return NextResponse.redirect(new URL('/craftsman/dashboard?msg=subscription_renewed', request.url));
+      } else {
+        return NextResponse.redirect(new URL('/craftsman/dashboard?msg=payment_failed', request.url));
+      }
+    }
+
     const transaction = await db.paymentTransaction.findFirst({
       where: {
         OR: [
