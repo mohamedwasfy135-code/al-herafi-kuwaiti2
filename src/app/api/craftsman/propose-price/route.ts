@@ -1,3 +1,4 @@
+import { validateCraftsmanSubscription } from '@/lib/subscription';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth';

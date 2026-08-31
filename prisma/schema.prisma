@@ -24,6 +24,8 @@ model User {
   longitude           Float?
   rating              Float     @default(0)
   total_ratings       Int       @default(0)
+  subscriptionStatus    String    @default("inactive") // active, inactive, expired
+  subscriptionExpiryDate DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -39,6 +41,7 @@ model User {
   shareholderTransactions ShareholderTransaction[]
   craftsmanDocuments      CraftsmanIDocument[]
   payoutRequests          PayoutRequest[]
+  subscriptionPayments  SubscriptionPayment[]
   interventionRequests    InterventionRequest[]
   ratingsGiven            Rating[]                 @relation("RatingGiver")
   ratingsReceived         Rating[]                 @relation("RatingReceiver")
@@ -750,6 +753,8 @@ model CraftsmanIDocument {
   status              String    @default("pending")
   reviewedBy          String?
   reviewedAt          DateTime?
+  subscriptionStatus    String    @default("inactive") // active, inactive, expired
+  subscriptionExpiryDate DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -822,4 +827,24 @@ model PaymentTransaction {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   request    Request   @relation(fields: [requestId], references: [id])
+}
+
+
+model SubscriptionPayment {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  amount      Float
+  status      String   @default("pending") // pending, paid, failed
+  paymentId   String?
+  invoiceId   String?
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model AppSettings {
+  key   String @id
+  value String
 }
