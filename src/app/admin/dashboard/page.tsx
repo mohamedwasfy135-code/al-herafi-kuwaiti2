@@ -45,6 +45,15 @@ export default function AdminDashboard() {
     checkSession()
   }, [router])
 
+  // ✅ تحديث تلقائي كل 30 ثانية بدون الحاجة لريفرش يدوي
+  useEffect(() => {
+    if (!admin) return
+    const interval = setInterval(() => {
+      loadAll()
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [admin])
+
   const loadAll = async () => {
     try {
       const [
@@ -97,15 +106,6 @@ export default function AdminDashboard() {
     } catch (err) { console.error(err) }
   }
 
-  const updateRequestStatus = async (requestId: string, status: string) => {
-    try {
-      await fetch('/api/admin/requests', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId, status }) })
-      await loadAll()
-      setMsg('✅ تم تحديث حالة الطلب')
-      setTimeout(() => setMsg(''), 3000)
-    } catch (err) { console.error(err) }
-  }
-
   const assignRequest = async () => {
     if (!assignModal || !selectedCraftsman) return
     try {
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/reassign-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId: reassignModal.id, newCraftsmanId: selectedCraftsman, oldCraftsmanId: reassignModal.craftsman_id })
+        body: JSON.stringify({ requestId: reassignModal.id, newCraftsmanId: selectedCraftsman, oldCraftsmanId: reassignModal.craftsmanId })
       })
       if (res.ok) {
         setMsg('✅ تم إعادة الإسناد وإرسال الإشعارات')
@@ -144,9 +144,13 @@ export default function AdminDashboard() {
 
   const updatePayout = async (payoutId: string, status: string) => {
     try {
-      await fetch('/api/admin/payouts', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payoutId, status }) })
+      const res = await fetch('/api/admin/payouts', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payoutId, status }) })
+      if (res.ok) {
+        setMsg(status === 'approved' ? '✅ تمت الموافقة على طلب السحب' : '❌ تم رفض طلب السحب')
+      } else {
+        setMsg('❌ حدث خطأ أثناء تحديث طلب السحب')
+      }
       await loadAll()
-      setMsg(status === 'approved' ? '✅ تمت الموافقة' : '❌ تم الرفض')
       setTimeout(() => setMsg(''), 3000)
     } catch (err) { console.error(err) }
   }
@@ -214,6 +218,7 @@ export default function AdminDashboard() {
     { key: 'overview', label: t('admin.overview'), icon: '📊' },
     { key: 'users', label: t('admin.users'), icon: '👥' },
     { key: 'requests', label: t('admin.requests'), icon: '📋' },
+    { key: 'payouts', label: isRTL ? 'طلبات السحب' : 'Payouts', icon: '🏧' },
     { key: 'earnings', label: t('admin.earnings'), icon: '💰' },
     { key: 'reports', label: t('admin.reports'), icon: '📈' },
     { key: 'changeRequests', label: t('admin.changeRequests'), icon: '🔄' },
@@ -221,6 +226,28 @@ export default function AdminDashboard() {
     { key: 'refunds', label: t('admin.refunds'), icon: '💵' },
     { key: 'interventions', label: t('admin.interventions'), icon: '🛠️' },
   ]
+
+  const statusColor = (status: string) => {
+    switch (status) {
+      case 'paid': return 'bg-green-100 text-green-800'
+      case 'completed': return 'bg-blue-100 text-blue-800'
+      case 'in_progress': return 'bg-indigo-100 text-indigo-800'
+      case 'accepted': return 'bg-purple-100 text-purple-800'
+      case 'pending': return 'bg-yellow-100 text-yellow-800'
+      case 'cancelled': return 'bg-red-100 text-red-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const paymentBadge = (r: any) => {
+    if (r.paymentStatus === 'paid') {
+      return <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-800">{isRTL ? 'مدفوع بالكامل' : 'Fully Paid'}</span>
+    }
+    if (r.visitFeePaid) {
+      return <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">{isRTL ? 'دفعة الزيارة فقط' : 'Visit Fee Only'}</span>
+    }
+    return <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-800">{isRTL ? 'غير مدفوع' : 'Unpaid'}</span>
+  }
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen flex bg-gray-100">
@@ -249,6 +276,11 @@ export default function AdminDashboard() {
             >
               <span>{item.icon}</span>
               <span>{item.label}</span>
+              {item.key === 'payouts' && payouts.filter((p: any) => p.status === 'pending').length > 0 && (
+                <span className="mr-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                  {payouts.filter((p: any) => p.status === 'pending').length}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -328,18 +360,35 @@ export default function AdminDashboard() {
                             <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
                               u.verification_status === 'approved' ? 'bg-green-100 text-green-800' :
                               u.verification_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              u.verification_status === 'banned' ? 'bg-red-100 text-red-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {u.verification_status || t('status.pending')}
+                              {u.verification_status === 'banned' ? (isRTL ? 'موقوف' : 'Banned') : (u.verification_status || t('status.pending'))}
                             </span>
                           </td>
-                          <td className="p-4">
-                            {u.role === 'craftsman' && u.verification_status !== 'approved' && (
+                          <td className="p-4 flex gap-2 flex-wrap">
+                            {u.role === 'craftsman' && u.verification_status !== 'approved' && u.verification_status !== 'banned' && (
                               <button 
                                 onClick={() => updateUserStatus(u.id, 'verification_status', 'approved')} 
                                 className="text-xs font-bold bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition"
                               >
                                 {t('admin.table.approve')}
+                              </button>
+                            )}
+                            {u.role !== 'admin' && u.verification_status !== 'banned' && (
+                              <button 
+                                onClick={() => { if (confirm(isRTL ? 'هل أنت متأكد من إيقاف هذا الحساب؟' : 'Are you sure you want to ban this account?')) updateUserStatus(u.id, 'verification_status', 'banned') }} 
+                                className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition"
+                              >
+                                {isRTL ? 'إيقاف الحساب' : 'Ban Account'}
+                              </button>
+                            )}
+                            {u.verification_status === 'banned' && (
+                              <button 
+                                onClick={() => updateUserStatus(u.id, 'verification_status', 'approved')} 
+                                className="text-xs font-bold bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition"
+                              >
+                                {isRTL ? 'إعادة التفعيل' : 'Reactivate'}
                               </button>
                             )}
                           </td>
@@ -355,8 +404,9 @@ export default function AdminDashboard() {
           {/* الطلبات */}
           {tab === 'requests' && (
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200 bg-gray-50">
+              <div className="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900">{t('admin.requests')}</h2>
+                <span className="text-xs text-gray-500 font-bold">{isRTL ? 'يتحدث تلقائياً كل 30 ثانية' : 'Auto-refreshes every 30s'}</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -366,28 +416,25 @@ export default function AdminDashboard() {
                       <th className="p-4 text-right font-bold text-gray-900 border-b">{t('admin.table.client')}</th>
                       <th className="p-4 text-right font-bold text-gray-900 border-b">{t('admin.table.craftsman')}</th>
                       <th className="p-4 text-right font-bold text-gray-900 border-b">{t('common.status')}</th>
+                      <th className="p-4 text-right font-bold text-gray-900 border-b">{isRTL ? 'حالة الدفع' : 'Payment'}</th>
                       <th className="p-4 text-right font-bold text-gray-900 border-b">{t('common.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {requests.length === 0 ? (
-                      <tr><td colSpan={5} className="p-8 text-center text-gray-500 font-bold">{t('common.noData')}</td></tr>
+                      <tr><td colSpan={6} className="p-8 text-center text-gray-500 font-bold">{t('common.noData')}</td></tr>
                     ) : (
                       requests.map((r: any) => (
                         <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="p-4 text-gray-900 font-medium">{r.service_type || t('admin.table.service')}</td>
+                          <td className="p-4 text-gray-900 font-medium">{r.serviceType || r.category?.name || '—'}</td>
                           <td className="p-4 text-gray-700">{r.client?.name || '—'}</td>
                           <td className="p-4 text-gray-700">{r.craftsman?.name || '—'}</td>
                           <td className="p-4">
-                            <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-                              r.status === 'done' ? 'bg-green-100 text-green-800' :
-                              r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              r.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                              'bg-blue-100 text-blue-800'
-                            }`}>
+                            <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${statusColor(r.status)}`}>
                               {t(`status.${r.status}`) || r.status}
                             </span>
                           </td>
+                          <td className="p-4">{paymentBadge(r)}</td>
                           <td className="p-4 flex gap-2 flex-wrap">
                             {!r.craftsman && (
                               <button 
@@ -403,6 +450,67 @@ export default function AdminDashboard() {
                                 className="text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg transition"
                               >
                                 {t('admin.table.reassign')}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* طلبات السحب (Payouts) */}
+          {tab === 'payouts' && (
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="p-6 border-b border-gray-200 bg-gray-50">
+                <h2 className="text-2xl font-bold text-gray-900">{isRTL ? 'طلبات سحب الأرباح' : 'Payout Requests'}</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="p-4 text-right font-bold text-gray-900 border-b">{t('admin.table.craftsman')}</th>
+                      <th className="p-4 text-right font-bold text-gray-900 border-b">{t('admin.table.phone')}</th>
+                      <th className="p-4 text-right font-bold text-gray-900 border-b">{isRTL ? 'المبلغ' : 'Amount'}</th>
+                      <th className="p-4 text-right font-bold text-gray-900 border-b">{t('common.status')}</th>
+                      <th className="p-4 text-right font-bold text-gray-900 border-b">{t('common.actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payouts.length === 0 ? (
+                      <tr><td colSpan={5} className="p-8 text-center text-gray-500 font-bold">{t('common.noData')}</td></tr>
+                    ) : (
+                      payouts.map((p: any) => (
+                        <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="p-4 text-gray-900 font-medium">{p.craftsman?.name || '—'}</td>
+                          <td className="p-4 text-gray-700">{p.craftsman?.phone || '—'}</td>
+                          <td className="p-4 text-green-700 font-bold">{p.amount} {isRTL ? 'د.ك' : 'KWD'}</td>
+                          <td className="p-4">
+                            <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                              p.status === 'approved' || p.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              p.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {p.status}
+                            </span>
+                          </td>
+                          <td className="p-4 flex gap-2">
+                            {p.status === 'pending' && (
+                              <>
+                                <button onClick={() => updatePayout(p.id, 'approved')} className="text-xs font-bold bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition">
+                                  {t('admin.table.approve')}
+                                </button>
+                                <button onClick={() => updatePayout(p.id, 'rejected')} className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition">
+                                  {t('admin.table.reject')}
+                                </button>
+                              </>
+                            )}
+                            {p.status === 'approved' && (
+                              <button onClick={() => updatePayout(p.id, 'completed')} className="text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition">
+                                {isRTL ? 'تأكيد التحويل' : 'Mark Transferred'}
                               </button>
                             )}
                           </td>
@@ -636,7 +744,7 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
             <h3 className="text-xl font-bold text-gray-900 mb-4">{t('admin.table.manualAssign')}</h3>
-            <p className="text-sm text-gray-600 mb-4">{t('admin.table.service')}: {assignModal.service_type || t('admin.table.service')}</p>
+            <p className="text-sm text-gray-600 mb-4">{t('admin.table.service')}: {assignModal.serviceType || assignModal.service_type || t('admin.table.service')}</p>
             <select 
               value={selectedCraftsman} 
               onChange={e => setSelectedCraftsman(e.target.value)} 
@@ -672,7 +780,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
             <h3 className="text-xl font-bold text-gray-900 mb-4">{t('admin.table.reassign')}</h3>
             <p className="text-sm text-gray-600 mb-4">
-              {t('admin.table.service')}: {reassignModal.service_type || t('admin.table.service')}
+              {t('admin.table.service')}: {reassignModal.serviceType || reassignModal.service_type || t('admin.table.service')}
             </p>
             <select 
               value={selectedCraftsman} 
@@ -680,7 +788,7 @@ export default function AdminDashboard() {
               className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">{isRTL ? 'اختر حرفي جديد' : 'Select New Craftsman'}</option>
-              {craftsmen.filter(c => c.id !== reassignModal.craftsman_id).map((c: any) => (
+              {craftsmen.filter(c => c.id !== reassignModal.craftsmanId).map((c: any) => (
                 <option key={c.id} value={c.id}>{c.name} - {c.phone}</option>
               ))}
             </select>
