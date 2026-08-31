@@ -664,12 +664,13 @@ export default function CraftsmanDashboard() {
 
           {/* المحادثات */}
           {tab === 'chats' && (
-            <div className="bg-white rounded-xl shadow-sm border overflow-hidden" style={{ height: '70vh' }}>
-              <iframe 
-                src="/chat" 
-                className="w-full h-full border-0"
-                title="نظام المحادثات"
-              />
+            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+              <div className="text-6xl mb-4">💬</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">المحادثات</h3>
+              <p className="text-gray-600 mb-4">تواصل مع العملاء مباشرة</p>
+              <Link href="/chat" className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition">
+                فتح المحادثات
+              </Link>
             </div>
           )}
 
