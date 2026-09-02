@@ -119,10 +119,9 @@ export async function GET(request: NextRequest) {
           const updateData: any = {};
           if (transaction.type === 'visit_fee') {
             updateData.visitFeePaid = true;
-            updateData.status = 'in_progress';
+            updateData.status = 'inspection_paid';
           } else if (transaction.type === 'final_payment') {
-            updateData.status = 'paid';
-            updateData.paidAt = new Date();
+            updateData.status = 'completed';
           }
 
           if (Object.keys(updateData).length > 0 && transaction.requestId) {
@@ -130,6 +129,7 @@ export async function GET(request: NextRequest) {
               where: { id: transaction.requestId },
               data: updateData
             });
+        console.log(`[Callback] تم تحديث الطلب #${transaction.requestId} إلى ${updateData.status}`)
           }
 
           // 3. إنشاء إشعار للعميل
