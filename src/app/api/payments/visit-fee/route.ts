@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // ✅ حفظ معاملة الدفع باستخدام الحقول المتاحة فقط في Prisma Schema
     await db.paymentTransaction.create({
       data: {
-        paymentId: invoice.PaymentId || 'pending',
+        paymentId: String(invoice.InvoiceId),
         invoiceId: String(invoice.InvoiceId),
         requestId: req.id,
         type: 'visit_fee',

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         CustomerName: req.client?.name || 'عميل',
         CustomerMobile: req.client?.phone || '',
         CustomerEmail: req.client?.email || '',
-        CallBackUrl: `${appUrl}/api/payments/callback`,
+        CallBackUrl: `${appUrl}/api/myfatoorah-callback`,
         ErrorUrl: `${appUrl}/payment/failed`,
         InvoiceItems: [
           {
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         amount: req.remainingAmount,
         type: 'final_payment',
         status: 'pending',
-        paymentId: invoiceId,
+        invoiceId: invoiceId,
         paymentUrl: paymentUrl,
       },
     })
