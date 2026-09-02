@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         CustomerEmail: email || `${phone}@temp.com`,
         InvoiceValue: amount,
         NotificationOption: 'LNK',
-        CallBackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/myfatoorah/callback`,
+        CallBackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/myfatoorah-callback`,
         ErrorUrl: `${process.env.NEXT_PUBLIC_APP_URL}/payment-error`,
         Language: 'ar',
         DisplayCurrencyIso: 'KWD'
