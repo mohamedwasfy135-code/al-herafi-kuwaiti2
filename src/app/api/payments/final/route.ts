@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
         type: 'final_payment',
         status: 'pending',
         invoiceId: invoiceId,
+        paymentId: invoiceId,
         paymentUrl: paymentUrl,
       },
     })
