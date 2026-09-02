@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
     let name = customerName, phone = customerPhone, email = customerEmail
     if (!name || !phone) {
       const reqData = await pool.query(`
-        SELECT u.name, u.phone, u.email FROM requests r
-        JOIN users u ON r.client_id = u.id
+        SELECT u.name, u.phone, u.email FROM "Request" r
+        JOIN "User" u ON r."clientId" = u.id
         WHERE r.id = $1
       `, [requestId])
       if (reqData.rows[0]) {
@@ -61,11 +61,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: data.Message || 'فشل إنشاء الدفع' }, { status: 400 })
     }
 
+    // ملاحظة: paymentId عمود إلزامي بالـ schema، ولا نملكه بعد وقت الإنشاء
+    // لذلك نضع InvoiceId مؤقتاً فيه، وسيُستبدل بالقيمة الحقيقية عند الـ callback
     const result = await pool.query(
-      `INSERT INTO payment_transactions (request_id, amount, type, myfatoorah_invoice_id, payment_url, status)
-       VALUES ($1, $2, $3, $4, $5, 'pending')
-       RETURNING id`,
-      [requestId, amount, type, data.Data.InvoiceId, data.Data.InvoiceURL]
+      `INSERT INTO "PaymentTransaction" ("requestId", amount, type, "paymentId", "invoiceId", "paymentUrl", status)
+      VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+      RETURNING id`,
+      [requestId, amount, type, data.Data.InvoiceId, data.Data.InvoiceId, data.Data.InvoiceURL]
     )
 
     return NextResponse.json({
