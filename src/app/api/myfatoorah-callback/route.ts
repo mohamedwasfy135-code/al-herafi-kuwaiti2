@@ -119,9 +119,9 @@ export async function GET(request: NextRequest) {
           const updateData: any = {};
           if (transaction.type === 'visit_fee') {
             updateData.visitFeePaid = true;
-            updateData.status = 'inspection_paid';
+            updateData.status = 'in_progress';
           } else if (transaction.type === 'final_payment') {
-            updateData.status = 'completed';
+            updateData.status = 'paid';
           }
 
           if (Object.keys(updateData).length > 0 && transaction.requestId) {
