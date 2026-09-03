@@ -36,6 +36,7 @@ export default function AdminDashboard() {
   const [loadingReport, setLoadingReport] = useState(false)
   const [newSubFee, setNewSubFee] = useState('')
   const [updatingFee, setUpdatingFee] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     async function checkSession() {
