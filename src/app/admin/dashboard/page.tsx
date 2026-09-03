@@ -14,6 +14,7 @@ export default function AdminDashboard() {
   const [admin, setAdmin] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('overview')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [stats, setStats] = useState<any>(null)
   const [users, setUsers] = useState<any[]>([])
   const [requests, setRequests] = useState<any[]>([])
@@ -328,9 +329,29 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen flex bg-gray-100">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-gray-100 flex flex-col md:flex-row relative">
       {/* القائمة الجانبية */}
-      <aside className="w-64 bg-gray-900 text-white p-4 flex flex-col shadow-xl">
+      
+      {/* زر القائمة للموبايل */}
+      <button 
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="md:hidden fixed top-4 right-4 z-50 bg-gray-900 text-white p-3 rounded-lg shadow-lg border border-gray-700"
+      >
+        {isSidebarOpen ? '✕' : '☰'}
+      </button>
+
+      {/* خلفية معتمة عند فتح القائمة على الموبايل */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-30 md:hidden backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`
+        fixed md:sticky top-0 h-screen w-64 bg-gray-900 text-white p-4 flex flex-col shadow-xl z-40 transition-transform duration-300 ease-in-out
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
         <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-700">
           <h2 className="text-xl font-bold text-white">{t('admin.dashboard')}</h2>
           <button 
@@ -345,7 +366,7 @@ export default function AdminDashboard() {
           {menuItems.map(item => (
             <button 
               key={item.key} 
-              onClick={() => setTab(item.key)}
+              onClick={() => { setTab(item.key); setIsSidebarOpen(false) }}
               className={`w-full text-right px-4 py-3 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2 ${
                 tab === item.key 
                   ? 'bg-blue-600 text-white shadow-lg' 
@@ -372,7 +393,7 @@ export default function AdminDashboard() {
       </aside>
 
       {/* المحتوى الرئيسي */}
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto overflow-x-hidden pt-20 md:pt-8">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">
             {t('common.welcome')}, {admin.name}

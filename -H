@@ -1,0 +1,157 @@
+▲ Next.js 16.3.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.20.10.2:3000
+- Environments: .env
+✓ Ready in 255ms
+✓ Running next.config.ts took 19ms
+
+ GET / 200 in 613ms (next.js: 241ms, application-code: 372ms)
+prisma:query BEGIN
+prisma:query DEALLOCATE ALL
+prisma:query SELECT "public"."Category"."id", "public"."Category"."name", "public"."Category"."nameEn", "public"."Category"."icon", "public"."Category"."type" FROM "public"."Category" WHERE "public"."Category"."type" = $1 ORDER BY "public"."Category"."name" ASC OFFSET $2
+prisma:query COMMIT
+ GET /api/categories?type=business 200 in 2.2s (next.js: 83ms, application-code: 2.1s)
+prisma:query BEGIN
+prisma:query DEALLOCATE ALL
+prisma:query BEGIN
+prisma:query DEALLOCATE ALL
+prisma:query SELECT "public"."Category"."id", "public"."Category"."name", "public"."Category"."nameEn", "public"."Category"."icon", "public"."Category"."type" FROM "public"."Category" WHERE "public"."Category"."type" = $1 ORDER BY "public"."Category"."name" ASC OFFSET $2
+prisma:query COMMIT
+ GET /api/categories?type=business 200 in 790ms (next.js: 10ms, application-code: 780ms)
+prisma:query SELECT "public"."Category"."id", "public"."Category"."name", "public"."Category"."nameEn", "public"."Category"."icon", "public"."Category"."type" FROM "public"."Category" WHERE "public"."Category"."type" = $1 ORDER BY "public"."Category"."name" ASC OFFSET $2
+prisma:query COMMIT
+ GET /api/categories?type=service 200 in 3.3s (next.js: 154ms, application-code: 3.1s)
+prisma:query BEGIN
+prisma:query DEALLOCATE ALL
+prisma:query SELECT "public"."Category"."id", "public"."Category"."name", "public"."Category"."nameEn", "public"."Category"."icon", "public"."Category"."type" FROM "public"."Category" WHERE "public"."Category"."type" = $1 ORDER BY "public"."Category"."name" ASC OFFSET $2
+ GET /api/categories?type=service 200 in 766ms (next.js: 9ms, application-code: 757ms)
+prisma:query COMMIT
+ GET / 200 in 74ms (next.js: 26ms, application-code: 48ms)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_next_dist_20wefz_._.js from "172.20.10.2".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['172.20.10.2'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_lucide-react_dist_esm_icons_index_0wem3_5.js from "172.20.10.2".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['172.20.10.2'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_lucide-react_dist_esm_icons_158mugm._.js from "172.20.10.2".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['172.20.10.2'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_next_dist_12t0ra7._.js from "172.20.10.2".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['172.20.10.2'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_lucide-react_dist_esm_19e0nse._.js from "172.20.10.2".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['172.20.10.2'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_lucide-react_dist_esm_lucide-react_0_cloxd.js from "172.20.10.2".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['172.20.10.2'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/src_app_page_tsx_1gecvfk._.js from "172.20.10.2".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['172.20.10.2'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/hmr from "172.20.10.2".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['172.20.10.2'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /login 200 in 733ms (next.js: 688ms, application-code: 45ms)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/_1fm0ndb._.js from "172.20.10.2".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['172.20.10.2'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET / 200 in 61ms (next.js: 20ms, application-code: 40ms)
+ GET / 200 in 48ms (next.js: 11ms, application-code: 38ms)
+ GET / 200 in 63ms (next.js: 15ms, application-code: 48ms)
+prisma:query SELECT 1
+prisma:query SELECT 1
+prisma:query BEGIN
+prisma:query BEGIN
+prisma:query DEALLOCATE ALL
+prisma:query DEALLOCATE ALL
+prisma:query SELECT "public"."Category"."id", "public"."Category"."name", "public"."Category"."nameEn", "public"."Category"."icon", "public"."Category"."type" FROM "public"."Category" WHERE "public"."Category"."type" = $1 ORDER BY "public"."Category"."name" ASC OFFSET $2
+prisma:query SELECT "public"."Category"."id", "public"."Category"."name", "public"."Category"."nameEn", "public"."Category"."icon", "public"."Category"."type" FROM "public"."Category" WHERE "public"."Category"."type" = $1 ORDER BY "public"."Category"."name" ASC OFFSET $2
+prisma:query COMMIT
+ GET /api/categories?type=business 200 in 966ms (next.js: 40ms, application-code: 926ms)
+ GET /api/categories?type=service 200 in 973ms (next.js: 35ms, application-code: 938ms)
+prisma:query COMMIT
+prisma:query BEGIN
+prisma:query BEGIN
+prisma:query DEALLOCATE ALL
+prisma:query DEALLOCATE ALL
+prisma:query SELECT "public"."Category"."id", "public"."Category"."name", "public"."Category"."nameEn", "public"."Category"."icon", "public"."Category"."type" FROM "public"."Category" WHERE "public"."Category"."type" = $1 ORDER BY "public"."Category"."name" ASC OFFSET $2
+prisma:query SELECT "public"."Category"."id", "public"."Category"."name", "public"."Category"."nameEn", "public"."Category"."icon", "public"."Category"."type" FROM "public"."Category" WHERE "public"."Category"."type" = $1 ORDER BY "public"."Category"."name" ASC OFFSET $2
+prisma:query COMMIT
+prisma:query COMMIT
+ GET /api/categories?type=service 200 in 791ms (next.js: 12ms, application-code: 779ms)
+ GET /api/categories?type=business 200 in 799ms (next.js: 6ms, application-code: 793ms)
+ GET / 200 in 66ms (next.js: 16ms, application-code: 50ms)
+ GET / 200 in 92ms (next.js: 30ms, application-code: 62ms)
+ GET / 200 in 45ms (next.js: 3ms, application-code: 42ms)

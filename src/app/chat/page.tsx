@@ -28,6 +28,8 @@ export default function ChatPage() {
   const [newMsg, setNewMsg] = useState('')
   const [loadingChats, setLoadingChats] = useState(true)
   const [loadingMessages, setLoadingMessages] = useState(false)
+
+  const [showChatList, setShowChatList] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -99,7 +101,7 @@ export default function ChatPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-gray-50 flex">
       {/* الشريط الجانبي للمحادثات */}
-      <div className="w-80 bg-white border-l overflow-y-auto hidden md:block">
+      <div className={`w-full md:w-80 bg-white border-l overflow-y-auto ${showChatList ? "block" : "hidden md:block"}`}>
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold">المحادثات</h2>
         </div>
