@@ -307,6 +307,8 @@ export default function CraftsmanDashboard() {
       )}
 
 
+      <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden fixed top-4 right-4 z-50 bg-blue-600 text-white p-3 rounded-lg shadow-lg">☰</button>
+      {isSidebarOpen && <div className="fixed inset-0 bg-black/60 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
       <aside className="w-64 bg-white shadow-lg p-4 flex flex-col">
         <div className="flex items-center gap-3 mb-8 pb-4 border-b">
           <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-xl">
