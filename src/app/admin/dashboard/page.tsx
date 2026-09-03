@@ -349,7 +349,7 @@ export default function AdminDashboard() {
       )}
 
       <aside className={`
-        fixed md:sticky top-0 h-screen w-64 bg-gray-900 text-white p-4 flex flex-col shadow-xl z-40 transition-transform duration-300 ease-in-out
+        fixed md:sticky top-0 h-screen w-64 bg-gray-900 text-white p-4 flex flex-col shadow-xl z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-700">
