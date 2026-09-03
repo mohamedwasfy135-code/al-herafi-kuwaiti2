@@ -16,6 +16,8 @@ export default function ClientDashboard() {
   const [notifications, setNotifications] = useState<any[]>([])
   const [loadingRequests, setLoadingRequests] = useState(false)
   const [msg, setMsg] = useState('')
+  const [chats, setChats] = useState<any[]>([])
+  const [loadingChats, setLoadingChats] = useState(false)
 
   useEffect(() => {
     const successMsg = searchParams.get('msg')
@@ -53,6 +55,21 @@ export default function ClientDashboard() {
     }
     if (activeTab === 'notifications') {
       fetch('/api/notifications').then(r => r.json()).then(data => setNotifications(data.notifications || [])).catch(() => {})
+    }
+    if (activeTab === 'chats') {
+      setLoadingChats(true)
+      fetch('/api/chats', { credentials: 'include' })
+        .then(r => r.json())
+        .then(data => {
+          const raw = data.chats || data.data || []
+          const formatted = raw.map((c: any) => {
+            const other = c.participant1?.id === user.id ? c.participant2 : c.participant1
+            return { ...c, otherUser: c.otherUser || other }
+          })
+          setChats(formatted)
+          setLoadingChats(false)
+        })
+        .catch(() => setLoadingChats(false))
     }
   }, [user, activeTab])
 
@@ -188,6 +205,7 @@ export default function ClientDashboard() {
               <button onClick={() => setActiveTab('browse')} className={`px-4 py-2 rounded-md text-sm font-semibold transition ${activeTab === 'browse' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600'}`}>🔍 تصفح</button>
               <button onClick={() => setActiveTab('requests')} className={`px-4 py-2 rounded-md text-sm font-semibold transition ${activeTab === 'requests' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600'}`}>📦 طلباتي {requests.length > 0 && `(${requests.length})`}</button>
               <button onClick={() => setActiveTab('notifications')} className={`px-4 py-2 rounded-md text-sm font-semibold transition ${activeTab === 'notifications' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600'}`}>🔔 الإشعارات {notifications.length > 0 && `(${notifications.length})`}</button>
+              <button onClick={() => setActiveTab('chats')} className={`px-4 py-2 rounded-md text-sm font-semibold transition ${activeTab === 'chats' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600'}`}>💬 المحادثات {chats.length > 0 && `(${chats.length})`}</button>
             </div>
 
             <button onClick={handleLogout} className="text-sm text-red-600 font-semibold hover:bg-red-50 px-3 py-2 rounded-lg">تسجيل الخروج</button>
@@ -321,6 +339,32 @@ export default function ClientDashboard() {
                     <p className="font-bold text-gray-900">{notif.title}</p>
                     <p className="text-sm text-gray-600 mt-1">{notif.body}</p>
                     <p className="text-xs text-gray-400 mt-2">{new Date(notif.createdAt).toLocaleString('ar-KW')}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {activeTab === 'chats' && (
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">المحادثات</h2>
+            {loadingChats ? (
+              <div className="text-center py-12"><div className="animate-spin text-4xl mb-4">⏳</div><p className="text-gray-600">جاري التحميل...</p></div>
+            ) : chats.length === 0 ? (
+              <div className="text-center py-12"><div className="text-6xl mb-4">💬</div><h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد محادثات بعد</h3></div>
+            ) : (
+              <div className="space-y-3">
+                {chats.map((chat: any) => (
+                  <div
+                    key={chat.id}
+                    onClick={() => window.location.href = `/chat?conversationId=${chat.id}`}
+                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md hover:bg-gray-50 transition cursor-pointer flex justify-between items-center gap-3"
+                  >
+                    <div>
+                      <h3 className="font-bold text-gray-900">{chat.otherUser?.name || 'محادثة'}</h3>
+                      {chat.lastMessage && <p className="text-sm text-gray-500 truncate max-w-xs">{chat.lastMessage}</p>}
+                    </div>
+                    <span className="text-blue-600 text-sm font-semibold whitespace-nowrap">فتح ←</span>
                   </div>
                 ))}
               </div>
