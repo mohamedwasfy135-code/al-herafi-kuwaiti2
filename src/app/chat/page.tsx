@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 interface Chat {
   id: string
@@ -21,6 +21,7 @@ interface Message {
 
 export default function ChatPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState<any>(null)
   const [chats, setChats] = useState<Chat[]>([])
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
@@ -38,6 +39,10 @@ export default function ChatPage() {
       const parsed = JSON.parse(stored)
       setUser(parsed)
       loadChats(parsed.id)
+      const conversationId = searchParams.get('conversationId')
+      if (conversationId) {
+        loadMessages(conversationId)
+      }
     } else {
       router.push('/login')
     }
@@ -64,6 +69,7 @@ export default function ChatPage() {
   const loadMessages = async (chatId: string) => {
     setLoadingMessages(true)
     setSelectedChat(chatId)
+    setShowChatList(false)
     try {
       const res = await fetch(`/api/chats/${chatId}/messages`, { credentials: 'include' })
       const data = await res.json()
@@ -127,8 +133,14 @@ export default function ChatPage() {
       <div className="flex-1 flex flex-col">
         {selectedChat ? (
           <>
-            <div className="bg-white border-b p-4 font-bold">
-              {chats.find(c => c.id === selectedChat)?.otherUser?.name || 'محادثة'}
+            <div className="bg-white border-b p-4 font-bold flex items-center gap-3">
+              <button
+                onClick={() => setShowChatList(true)}
+                className="md:hidden text-blue-600 text-xl"
+              >
+                →
+              </button>
+              <span>{chats.find(c => c.id === selectedChat)?.otherUser?.name || 'محادثة'}</span>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {loadingMessages ? (
