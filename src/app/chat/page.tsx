@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 interface Chat {
@@ -19,7 +19,7 @@ interface Message {
   createdAt: string
 }
 
-export default function ChatPage() {
+function ChatPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [user, setUser] = useState<any>(null)
@@ -193,5 +193,13 @@ export default function ChatPage() {
         </button>
       </div>
     </div>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">تحميل...</div>}>
+      <ChatPageInner />
+    </Suspense>
   )
 }
