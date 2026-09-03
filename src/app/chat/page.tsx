@@ -133,14 +133,15 @@ function ChatPageInner() {
       <div className="flex-1 flex flex-col">
         {selectedChat ? (
           <>
-            <div className="bg-white border-b p-4 font-bold flex items-center gap-3">
+            <div className="bg-white border-b p-4 font-bold flex items-center gap-2">
               <button
                 onClick={() => setShowChatList(true)}
-                className="md:hidden text-blue-600 text-xl"
+                className="md:hidden flex items-center gap-1 text-blue-600 bg-blue-50 hover:bg-blue-100 transition rounded-lg px-3 py-1.5 text-sm shrink-0"
               >
-                →
+                <span className="text-lg leading-none">→</span>
+                <span>رجوع</span>
               </button>
-              <span>{chats.find(c => c.id === selectedChat)?.otherUser?.name || 'محادثة'}</span>
+              <span className="truncate">{chats.find(c => c.id === selectedChat)?.otherUser?.name || 'محادثة'}</span>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {loadingMessages ? (
@@ -184,14 +185,16 @@ function ChatPageInner() {
       </div>
 
       {/* زر العودة للرئيسية */}
-      <div className="fixed bottom-4 right-4 md:hidden">
-        <button
-          onClick={() => router.push('/')}
-          className="bg-white shadow-lg rounded-full p-3"
-        >
-          🏠
-        </button>
-      </div>
+      {!selectedChat && (
+        <div className="fixed bottom-4 right-4 md:hidden">
+          <button
+            onClick={() => router.push('/')}
+            className="bg-white shadow-lg rounded-full p-3"
+          >
+            🏠
+          </button>
+        </div>
+      )}
     </div>
   )
 }
