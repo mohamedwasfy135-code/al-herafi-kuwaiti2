@@ -288,7 +288,7 @@ export default function CraftsmanDashboard() {
   return (
     <div dir="rtl" className="min-h-screen bg-gray-50 flex">
       {/* القائمة الجانبية */}
-      <aside className="w-64 bg-white shadow-lg p-4 flex flex-col">
+      <aside className={`w-64 bg-white shadow-lg p-4 flex flex-col">
         <div className="flex items-center gap-3 mb-8 pb-4 border-b">
           <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-xl">
             {user?.name?.charAt(0) || 'ح'}
@@ -303,8 +303,8 @@ export default function CraftsmanDashboard() {
           {menuItems.map(item => (
             <button
               key={item.key}
-              onClick={() => setTab(item.key)}
-              className={`w-full text-right px-4 py-3 rounded-lg text-sm font-bold transition flex items-center gap-2 ${
+              onClick={() => { setTab(item.key); setIsSidebarOpen(false) }}
+              className={\`w-full text-right px-4 py-3 rounded-lg text-sm font-bold transition flex items-center gap-2 ${
                 tab === item.key ? 'bg-green-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -320,7 +320,7 @@ export default function CraftsmanDashboard() {
       </aside>
 
       {/* المحتوى الرئيسي */}
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 w-full p-4 md:p-8 overflow-y-auto overflow-x-hidden pt-20 md:pt-8">
         <div className="max-w-6xl mx-auto">
           {(user?.subscriptionStatus !== 'active' && user?.subscriptionStatus !== 'inactive') && (
             <div className="p-4 rounded-lg mb-6 font-bold bg-red-100 text-red-800 border border-red-300 flex justify-between items-center">
