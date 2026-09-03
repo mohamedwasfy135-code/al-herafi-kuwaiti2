@@ -8,6 +8,7 @@ export default function CraftsmanDashboard() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('myRequests')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   
   const [biddingRequests, setBiddingRequests] = useState<any[]>([])
   const [myRequests, setMyRequests] = useState<any[]>([])
@@ -288,7 +289,25 @@ export default function CraftsmanDashboard() {
   return (
     <div dir="rtl" className="min-h-screen bg-gray-50 flex">
       {/* القائمة الجانبية */}
-      <aside className={`w-64 bg-white shadow-lg p-4 flex flex-col">
+      
+      {/* زر القائمة للموبايل */}
+      <button 
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="md:hidden fixed top-4 right-4 z-50 bg-blue-600 text-white p-3 rounded-lg shadow-lg border border-blue-700"
+      >
+        {isSidebarOpen ? '✕' : '☰'}
+      </button>
+
+      {/* خلفية معتمة عند فتح القائمة على الموبايل */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-30 md:hidden backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+
+      <aside className="w-64 bg-white shadow-lg p-4 flex flex-col">
         <div className="flex items-center gap-3 mb-8 pb-4 border-b">
           <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-xl">
             {user?.name?.charAt(0) || 'ح'}
@@ -304,7 +323,7 @@ export default function CraftsmanDashboard() {
             <button
               key={item.key}
               onClick={() => { setTab(item.key); setIsSidebarOpen(false) }}
-              className={\`w-full text-right px-4 py-3 rounded-lg text-sm font-bold transition flex items-center gap-2 ${
+              className={`w-full text-right px-4 py-3 rounded-lg text-sm font-bold transition flex items-center gap-2 ${
                 tab === item.key ? 'bg-green-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
